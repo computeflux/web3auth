@@ -6,7 +6,7 @@
  * In production, this communicates with a backend service that:
  * 1. Sends OTP emails
  * 2. Verifies OTP codes
- * 3. Issues JWTs with the user's identity
+ * 3. Issues API Keys for authenticated requests
  *
  * For local development, a mock implementation is provided that simulates
  * the flow without a real backend.
@@ -49,7 +49,7 @@ export interface VerifyOtpParams {
 export interface AuthResponse {
     success: boolean;
     userInfo?: Web3AuthUserInfo;
-    /** JWT token for authenticated API calls */
+    /** API Key for authenticated API calls */
     token?: string;
     /** Wallet address (derived by backend, returned on login) */
     address?: string;
@@ -181,7 +181,7 @@ export class AuthClient {
         return {
             success: true,
             userInfo,
-            token: `mock_token_${Date.now()}`,
+            token: `tee_${Date.now().toString(16).padStart(64, "0")}`,
             address: MOCK_ADDRESS,
         };
     }

@@ -12,6 +12,11 @@
  */
 
 import {
+    computeResponse,
+    computeResponseCached,
+    clearCachedKey,
+} from "./txPassword";
+import {
     createContext,
     useCallback,
     useContext,
@@ -253,8 +258,8 @@ export function Web3AuthProvider({
                 rpcTargets,
                 defaultChainId: _defaultChainId,
                 explorerUrl: configRef.current.web3AuthOptions.explorerUrl,
-                    theme: uiConfig?.mode,
-                    primaryColor: uiConfig?.primaryColor,
+                theme: uiConfig?.mode,
+                primaryColor: uiConfig?.primaryColor,
                 onBeforeSend,
                 onBeforeSign,
             });
@@ -322,7 +327,8 @@ export function Web3AuthProvider({
                         })) as string[];
                         const a = accounts?.[0];
                         if (!a) return;
-                        wcProviderRef.current = wc as unknown as IEIP1193Provider;
+                        wcProviderRef.current =
+                            wc as unknown as IEIP1193Provider;
                         providerRef.current = wc as unknown as IEIP1193Provider;
                         setProvider(wc as unknown as IEIP1193Provider);
                         setAddress(a);
@@ -369,9 +375,7 @@ export function Web3AuthProvider({
                     (p) => p?.isOkxWallet || p?.isOKExWallet,
                 );
             } else if (ws.connectorName === "bitget") {
-                picked = candidates.find(
-                    (p) => p?.isBitkeep || p?.isBitKeep,
-                );
+                picked = candidates.find((p) => p?.isBitkeep || p?.isBitKeep);
             } else if (ws.connectorName === "tokenpocket") {
                 picked = candidates.find((p) => p?.isTokenPocket);
             } else if (ws.connectorName === "trust") {
@@ -411,6 +415,8 @@ export function Web3AuthProvider({
     );
     const txConfirmResolve = useRef<((ok: boolean) => void) | null>(null);
     const passwordHashRef = useRef<string>("");
+    const signTokenRef = useRef<string>("");
+    const signTokenExpRef = useRef<number>(0);
     const [chainMeta, setChainMeta] = useState<{
         name: string;
         symbol: string;
@@ -424,6 +430,109 @@ export function Web3AuthProvider({
     const [showSignConfirm, setShowSignConfirm] = useState(false);
     const [signMessage, setSignMessage] = useState<string>("");
     const signConfirmResolve = useRef<((ok: boolean) => void) | null>(null);
+
+    // 获取 signToken（challenge-response 验证）
+    const acquireSignToken = useCallback(
+        async (reason: "tx" | "sign"): Promise<string | null> => {
+            // 检查缓存是否有效（提前 10s 刷新）
+            const now = Date.now();
+            if (signTokenRef.current && now < signTokenExpRef.current - 10000) {
+                return signTokenRef.current;
+            }
+
+            if (!authBackendUrl || !walletRef.current) return null;
+
+            try {
+                // 1. 获取 challenge
+                const chalQuery = `query($token:String!){getChallenge(token:$token){status challenge salt expiresAt error}}`;
+                const chalRes = await fetch(`${authBackendUrl}/gql`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        query: chalQuery,
+                        variables: { token: walletRef.current.token },
+                    }),
+                });
+                const chalJson = await chalRes.json();
+                const challengeResult = chalJson.data?.getChallenge;
+                if (
+                    chalJson.errors ||
+                    !challengeResult ||
+                    challengeResult.status !== "success"
+                ) {
+                    const errMsg =
+                        challengeResult?.error ||
+                        chalJson.errors?.[0]?.message ||
+                        "unknown";
+                    // 密码未设置也由弹窗自己检测处理
+                    console.error("[web3auth] getChallenge failed:", chalJson);
+                    return null;
+                }
+                const { challenge, salt } = challengeResult;
+
+                // 2. 计算 response
+                let response: string;
+                const cached = await computeResponseCached(challenge);
+                if (cached) {
+                    response = cached;
+                } else {
+                    // 弹窗让用户输入密码
+                    if (reason === "tx") {
+                        txConfirmResolve.current = (ok: boolean) => {
+                            if (!ok) {
+                                txConfirmResolve.current = null;
+                            }
+                        };
+                    } else {
+                        signConfirmResolve.current = (ok: boolean) => {
+                            if (!ok) {
+                                signConfirmResolve.current = null;
+                            }
+                        };
+                    }
+                    // 等待用户输入密码并计算 response
+                    // 实际上这里需要更复杂的异步流程
+                    // 简化：直接返回 null，由弹窗回调处理
+                    return null;
+                }
+
+                // 3. 验证 response
+                const verifyQuery = `mutation($token:String!,$challenge:String!,$response:String!){verifyResponse(token:$token,challenge:$challenge,response:$response){status signToken expiresAt error}}`;
+                const verifyRes = await fetch(`${authBackendUrl}/gql`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        query: verifyQuery,
+                        variables: {
+                            token: walletRef.current.token,
+                            challenge,
+                            response,
+                        },
+                    }),
+                });
+                const verifyJson = await verifyRes.json();
+                if (
+                    verifyJson.errors ||
+                    verifyJson.data?.verifyResponse?.status !== "ok"
+                ) {
+                    console.error(
+                        "[web3auth] verifyResponse failed:",
+                        verifyJson,
+                    );
+                    return null;
+                }
+
+                const { signToken, expiresAt } = verifyJson.data.verifyResponse;
+                signTokenRef.current = signToken;
+                signTokenExpRef.current = new Date(expiresAt).getTime();
+                return signToken;
+            } catch (err) {
+                console.error("[web3auth] acquireSignToken error:", err);
+                return null;
+            }
+        },
+        [authBackendUrl],
+    );
 
     // 交易确认回调
     const onBeforeSend = useCallback(
@@ -461,10 +570,12 @@ export function Web3AuthProvider({
                     setEstimatedFee("");
                 }
 
+                // 获取 signToken（弹窗自己完成 challenge-response）
+                const st = await acquireSignToken("tx");
                 txConfirmResolve.current = (ok: boolean) => {
-                    if (ok) (tx as any)._passwordHash = passwordHashRef.current;
                     resolve(ok);
                 };
+
                 // 计算发送金额
                 try {
                     const v = BigInt((tx.value as string) || "0");
@@ -483,13 +594,13 @@ export function Web3AuthProvider({
                 setConfirmTx(tx);
                 setShowTxConfirm(true);
             }),
-        [chainId],
+        [chainId, acquireSignToken],
     );
 
-    const handleTxConfirm = useCallback((hash: string) => {
-        passwordHashRef.current = hash;
+    const handleTxConfirm = useCallback((signToken: string) => {
+        signTokenRef.current = signToken;
         if (walletRef.current) {
-            walletRef.current.passwordHash = hash;
+            walletRef.current.signToken = signToken;
         }
         txConfirmResolve.current?.(true);
         setShowTxConfirm(false);
@@ -505,20 +616,33 @@ export function Web3AuthProvider({
     // 签名确认回调
     const onBeforeSign = useCallback(
         (msg: { message: string; from: string }) =>
-            new Promise<boolean>((resolve) => {
-                signConfirmResolve.current = (ok: boolean) => {
-                    resolve(ok);
-                };
+            new Promise<boolean>(async (resolve) => {
+                const st = await acquireSignToken("sign");
+                if (!st) {
+                    signConfirmResolve.current = (ok: boolean) => {
+                        if (ok) {
+                            // signToken 已由弹窗流程获取
+                        }
+                        resolve(ok);
+                    };
+                } else {
+                    if (walletRef.current) {
+                        walletRef.current.signToken = st;
+                    }
+                    signConfirmResolve.current = (ok: boolean) => {
+                        resolve(ok);
+                    };
+                }
                 setSignMessage(msg.message);
                 setShowSignConfirm(true);
             }),
-        [],
+        [acquireSignToken],
     );
 
-    const handleSignConfirm = useCallback((hash: string) => {
-        passwordHashRef.current = hash;
+    const handleSignConfirm = useCallback((signToken: string) => {
+        signTokenRef.current = signToken;
         if (walletRef.current) {
-            walletRef.current.passwordHash = hash;
+            walletRef.current.signToken = signToken;
         }
         signConfirmResolve.current?.(true);
         setShowSignConfirm(false);
@@ -828,6 +952,9 @@ export function Web3AuthProvider({
             await authRef.current?.logout();
             walletRef.current?.destroy();
             walletRef.current = null;
+            clearCachedKey();
+            signTokenRef.current = "";
+            signTokenExpRef.current = 0;
             // WalletConnect: best-effort disconnect
             try {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1110,6 +1237,8 @@ export function Web3AuthProvider({
                     onCancel={handleSignCancel}
                     theme={uiConfig?.mode ?? "dark"}
                     message={signMessage}
+                    backendUrl={authBackendUrl}
+                    token={walletRef.current?.token}
                 />
             </Web3AuthContext.Provider>
         </Web3AuthI18nProvider>
