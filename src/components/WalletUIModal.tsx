@@ -29,9 +29,12 @@ type ThemeColors = {
     btn: string;
     btnHover: string;
     btnDisabled: string;
-    btnText: string;
+        btnText: "#ffffff",
     softBorder: string;
     panelBg: string;
+    tagBg: string;
+    addressBg: string;
+    boxShadowInset: string;
     /** 开关滑块：需与透明轨道 / 绿色轨道都有对比度，勿直接用 cardBg */
     toggleKnobBg: string;
     toggleKnobBorder: string;
@@ -39,16 +42,19 @@ type ThemeColors = {
 
 const LIGHT: ThemeColors = {
     overlay: "rgba(0,0,0,0.55)",
-    cardBg: "#ffffff",
+    cardBg: "#fafafa",
     cardShadow: "0 24px 80px rgba(0,0,0,0.28), 0 2px 10px rgba(0,0,0,0.18)",
     text: "#1f1f1f",
     subtext: "#6b7280",
-    btn: "#2563eb",
-    btnHover: "#1d4ed8",
-    btnDisabled: "#a0c4ff",
-    btnText: "#ffffff",
+    btn: "#1f1f1f",
+    btnHover: "#000000",
+    btnDisabled: "#1f1f1f",
+        btnText: "#ffffff",
     softBorder: "rgba(0,0,0,0.08)",
-    panelBg: "rgba(255,255,255,0.72)",
+    panelBg: "rgba(250,250,250,0.85)",
+    tagBg: "rgba(0,0,0,0.05)",
+    addressBg: "rgba(240,240,240,0.85)",
+    boxShadowInset: "inset 0 -1px 0 rgba(0,0,0,0.05)",
     toggleKnobBg: "#f3f4f6",
     toggleKnobBorder: "rgba(0,0,0,0.12)",
 };
@@ -59,12 +65,15 @@ const DARK: ThemeColors = {
     cardShadow: "0 24px 80px rgba(0,0,0,0.55), 0 2px 10px rgba(0,0,0,0.35)",
     text: "#e4e4e7",
     subtext: "#a1a1aa",
-    btn: "#2563eb",
-    btnHover: "#3b82f6",
-    btnDisabled: "#1e3a5f",
-    btnText: "#ffffff",
+    btn: "#e4e4e7",
+    btnHover: "#ffffff",
+    btnDisabled: "#3f3f46",
+        btnText: "#121214",
     softBorder: "rgba(255,255,255,0.10)",
     panelBg: "rgba(18,18,20,0.72)",
+    tagBg: "rgba(255,255,255,0.08)",
+    addressBg: "rgba(0,0,0,0.22)",
+    boxShadowInset: "inset 0 -1px 0 rgba(255,255,255,0.05)",
     toggleKnobBg: "#e4e4e7",
     toggleKnobBorder: "rgba(0,0,0,0.35)",
 };
@@ -323,8 +332,6 @@ export type WalletUIModalProps = {
     open: boolean;
     onClose: () => void;
     theme?: "light" | "dark";
-    primaryColor?: string;
-    primaryText?: string;
     address?: string | null;
     provider?: {
         request: (args: {
@@ -363,61 +370,14 @@ function isLightColor(hex: string): boolean {
     return (r * 299 + g * 587 + b * 114) / 1000 > 150;
 }
 
-function resolveTheme(
-    isDark: boolean,
-    primaryColor?: string,
-    primaryText?: string,
-): ThemeColors {
-    const base = isDark ? DARK : LIGHT;
-    const root =
-        typeof document !== "undefined"
-            ? getComputedStyle(document.documentElement)
-            : null;
-    const bg = root?.getPropertyValue("--background").trim();
-    const card = root?.getPropertyValue("--card").trim();
-    const fg = root?.getPropertyValue("--foreground").trim();
-    const muted = root?.getPropertyValue("--muted-foreground").trim();
-    const border = root?.getPropertyValue("--border").trim();
-
-    const resolveHsl = (v: string) => {
-        const parts = v.split(/\s+/);
-        if (parts.length >= 2) {
-            const h = parts[0];
-            const s = parts[1];
-            const l = parts[2] ?? "50%";
-            return `hsl(${h}, ${s}, ${l})`;
-        }
-        return null;
-    };
-
-    return {
-        ...base,
-        btn: primaryColor ?? base.btn,
-        btnHover: primaryColor ?? base.btnHover,
-        btnText:
-            primaryText ??
-            (primaryColor && isLightColor(primaryColor)
-                ? "#111111"
-                : base.btnText),
-        cardBg: card ? (resolveHsl(card) ?? base.cardBg) : base.cardBg,
-        text: fg ? (resolveHsl(fg) ?? base.text) : base.text,
-        subtext: muted ? (resolveHsl(muted) ?? base.subtext) : base.subtext,
-        softBorder: border
-            ? (resolveHsl(border) ?? base.softBorder)
-            : base.softBorder,
-        panelBg: bg ? (resolveHsl(bg) ?? base.panelBg) : base.panelBg,
-    };
+function resolveTheme(isDark: boolean): ThemeColors {
+    return isDark ? DARK : LIGHT;
 }
 
 export default function WalletUIModal(props: WalletUIModalProps) {
     const theme = useMemo(
-        () =>
-            resolveTheme(
-                props.theme !== "light",
-                props.primaryColor,
-                props.primaryText,
-            ),
-        [props.theme, props.primaryColor, props.primaryText],
+        () => resolveTheme(props.theme !== "light"),
+        [props.theme],
     );
     const { t } = useTranslation();
     const [balanceEth, setBalanceEth] = useState<string>("0");
@@ -881,7 +841,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                     style={{
                         padding: "20px 20px 22px",
                         background: (() => {
-                            const c = props.primaryColor ?? "37,99,235";
+                            const c = "228,228,231";
                             const rgb = c.startsWith("rgb")
                                 ? c
                                       .replace(/rgb\(|\s|\)/g, "")
@@ -899,10 +859,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                 `linear-gradient(180deg, ${toRgba(rgb, 0.12)}, transparent 72%)`
                             );
                         })(),
-                        boxShadow:
-                            props.theme === "light"
-                                ? "inset 0 -1px 0 rgba(0,0,0,0.05)"
-                                : "inset 0 -1px 0 rgba(255,255,255,0.05)",
+                        boxShadow: theme.boxShadowInset,
                     }}
                 >
                     <div
@@ -913,10 +870,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                             gap: 12,
                             padding: "10px 10px 10px 14px",
                             borderRadius: 12,
-                            background:
-                                props.theme === "light"
-                                    ? "rgba(255,255,255,0.75)"
-                                    : "rgba(0,0,0,0.22)",
+                            background: theme.addressBg,
                         }}
                         title={addr || undefined}
                     >
@@ -948,10 +902,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                 height: 30,
                                 padding: "0 12px",
                                 borderRadius: 8,
-                                background:
-                                    props.theme === "light"
-                                        ? "rgba(0,0,0,0.05)"
-                                        : "rgba(255,255,255,0.08)",
+                                background: theme.tagBg,
                                 color: theme.text,
                                 cursor: canCopy ? "pointer" : "default",
                                 opacity: canCopy ? 1 : 0.55,
@@ -1090,10 +1041,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                                 padding: "0 14px",
                                                 borderRadius: 10,
                                                 border: `1px solid ${theme.softBorder}`,
-                                                background:
-                                                    props.theme === "light"
-                                                        ? "rgba(0,0,0,0.06)"
-                                                        : "rgba(255,255,255,0.08)",
+                                                background: theme.tagBg,
                                                 color: theme.text,
                                                 fontSize: 12,
                                                 fontWeight: 800,
@@ -1198,8 +1146,8 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                             height: 44,
                                             borderRadius: 999,
                                             border: `1px solid ${theme.softBorder}`,
-                                            background: "transparent",
-                                            color: theme.text,
+                                            background: theme.btn,
+                                            color: theme.btnText,
                                             fontSize: 14,
                                             fontWeight: 700,
                                             cursor: sendBusy

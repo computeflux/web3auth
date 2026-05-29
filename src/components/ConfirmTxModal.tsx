@@ -33,13 +33,14 @@ const LIGHT = {
     subtext: "#888",
     inputBg: "#f9fafb",
     inputBorder: "#e5e7eb",
-    btnPrimary: "#2563eb",
-    btnPrimaryHover: "#1d4ed8",
+    btnPrimary: "#1f1f1f",
+    btnPrimaryHover: "#000000",
+    btnText: "#e5e7eb",
     btnGhost: "transparent",
     errorText: "#ef4444",
     pinBox: "#f3f4f6",
     pinBorder: "#d1d5db",
-    pinFocus: "#2563eb",
+    pinFocus: "#1f1f1f",
 };
 
 const DARK = {
@@ -50,13 +51,14 @@ const DARK = {
     subtext: "#71717a",
     inputBg: "#1a1a1e",
     inputBorder: "#2e2e35",
-    btnPrimary: "#2563eb",
-    btnPrimaryHover: "#3b82f6",
+    btnPrimary: "#e4e4e7",
+    btnPrimaryHover: "#ffffff",
+    btnText: "#1a1a1e",
     btnGhost: "transparent",
     errorText: "#f87171",
     pinBox: "#1a1a1e",
     pinBorder: "#2e2e35",
-    pinFocus: "#2563eb",
+    pinFocus: "#e4e4e7",
 };
 
 /** 获取 challenge */
@@ -563,7 +565,7 @@ export default function ConfirmTxModal({
                         borderRadius: 10,
                         border: "none",
                         background: t.btnPrimary,
-                        color: "#fff",
+                        color: t.btnText,
                         fontSize: 15,
                         fontWeight: 600,
                         cursor: "pointer",

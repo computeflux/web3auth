@@ -61,13 +61,13 @@ const LIGHT: ThemeColors = {
     optionHoverBg: "#f3f4f6",
     optionHoverBorder: "#d1d5db",
     iconBg: "#eff6ff",
-    iconColor: "#2563eb",
-    btnPrimary: "#2563eb",
-    btnPrimaryHover: "#1d4ed8",
+    iconColor: "#1f1f1f",
+    btnPrimary: "#1f1f1f",
+    btnPrimaryHover: "#000000",
     divider: "rgba(128,128,128,0.25)",
     closeColor: "#999999",
-    pillBg: "#eff6ff",
-    pillColor: "#2563eb",
+    pillBg: "#f2f2f2",
+    pillColor: "#1f1f1f",
 };
 
 const DARK: ThemeColors = {
@@ -80,14 +80,14 @@ const DARK: ThemeColors = {
     optionBorder: "#2e2e35",
     optionHoverBg: "#222228",
     optionHoverBorder: "#3e3e48",
-    iconBg: "#1e293b",
-    iconColor: "#60a5fa",
-    btnPrimary: "#2563eb",
-    btnPrimaryHover: "#3b82f6",
+    iconBg: "#27272a",
+    iconColor: "#e4e4e7",
+    btnPrimary: "#e4e4e7",
+    btnPrimaryHover: "#ffffff",
     divider: "rgba(255,255,255,0.08)",
     closeColor: "#71717a",
-    pillBg: "#1e293b",
-    pillColor: "#93c5fd",
+    pillBg: "#2e2e35",
+    pillColor: "#e4e4e7",
 };
 
 // ---------------------------------------------------------------------------

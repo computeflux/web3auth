@@ -67,6 +67,14 @@ export interface Web3AuthNoModalOptions {
     googleClientId?: string;
     /** Google OAuth redirect URI */
     googleRedirectUri?: string;
+    /** GitHub OAuth Client ID */
+    githubClientId?: string;
+    /** GitHub OAuth redirect URI */
+    githubRedirectUri?: string;
+    /** Twitter/X OAuth Client ID */
+    twitterClientId?: string;
+    /** Twitter/X OAuth redirect URI */
+    twitterRedirectUri?: string;
     /** Blockchain explorer URL (for tx detail links) */
     explorerUrl?: string;
     /** Optional: fiat on-ramp (MoonPay / Transak / Onramper) */

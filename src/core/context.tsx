@@ -207,6 +207,10 @@ export function Web3AuthProvider({
             network: web3AuthNetwork,
             googleClientId: config.web3AuthOptions.googleClientId,
             googleRedirectUri: config.web3AuthOptions.googleRedirectUri,
+            githubClientId: config.web3AuthOptions.githubClientId,
+            githubRedirectUri: config.web3AuthOptions.githubRedirectUri,
+            twitterClientId: config.web3AuthOptions.twitterClientId,
+            twitterRedirectUri: config.web3AuthOptions.twitterRedirectUri,
         });
     }
 
@@ -259,7 +263,6 @@ export function Web3AuthProvider({
                 defaultChainId: _defaultChainId,
                 explorerUrl: configRef.current.web3AuthOptions.explorerUrl,
                 theme: uiConfig?.mode,
-                primaryColor: uiConfig?.primaryColor,
                 onBeforeSend,
                 onBeforeSign,
             });
@@ -693,7 +696,6 @@ export function Web3AuthProvider({
                     defaultChainId: _defaultChainId,
                     explorerUrl: configRef.current.web3AuthOptions.explorerUrl,
                     theme: uiConfig?.mode,
-                    primaryColor: uiConfig?.primaryColor,
                     onBeforeSend,
                     onBeforeSign,
                 });
@@ -739,7 +741,6 @@ export function Web3AuthProvider({
                     defaultChainId: _defaultChainId,
                     explorerUrl: configRef.current.web3AuthOptions.explorerUrl,
                     theme: uiConfig?.mode,
-                    primaryColor: uiConfig?.primaryColor,
                     onBeforeSend,
                     onBeforeSign,
                 });
@@ -850,6 +851,49 @@ export function Web3AuthProvider({
                         chainId: chain,
                     }),
                 );
+
+                // 获取后端 API Token（内嵌钱包在 OAuth 登录时获取，外部钱包需单独请求）
+                if (authBackendUrl) {
+                    try {
+                        const timestamp = Math.floor(Date.now() / 1000);
+                        const loginMsg = `Login to Web3Auth: ${timestamp}`;
+                        const sig = (await picked.request({
+                            method: "personal_sign",
+                            params: [loginMsg, a],
+                        })) as string;
+
+                        const loginQuery = `mutation($address:String!,$signature:String!,$message:String!){loginWithWallet(address:$address,signature:$signature,message:$message){success token address error}}`;
+                        const loginRes = await fetch(`${authBackendUrl}/gql`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                query: loginQuery,
+                                variables: {
+                                    address: a,
+                                    signature: sig,
+                                    message: loginMsg,
+                                },
+                            }),
+                        });
+                        const loginJson = await loginRes.json();
+                        const data = loginJson?.data?.loginWithWallet;
+                        if (data?.success && data?.token) {
+                            localStorage.setItem(
+                                "web3auth:session",
+                                JSON.stringify({
+                                    token: data.token,
+                                    address: data.address || a,
+                                }),
+                            );
+                        }
+                    } catch {
+                        // token 获取失败不影响钱包连接
+                        console.warn(
+                            "[web3auth] Failed to get API token for injected wallet",
+                        );
+                    }
+                }
+
                 return { success: true };
             } catch (e) {
                 const msg =
@@ -928,6 +972,48 @@ export function Web3AuthProvider({
                     chainId: chain,
                 }),
             );
+
+            // 获取后端 API Token
+            if (authBackendUrl) {
+                try {
+                    const timestamp = Math.floor(Date.now() / 1000);
+                    const loginMsg = `Login to Web3Auth: ${timestamp}`;
+                    const sig = (await (wc as any).request({
+                        method: "personal_sign",
+                        params: [loginMsg, a],
+                    })) as string;
+
+                    const loginQuery = `mutation($address:String!,$signature:String!,$message:String!){loginWithWallet(address:$address,signature:$signature,message:$message){success token address error}}`;
+                    const loginRes = await fetch(`${authBackendUrl}/gql`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            query: loginQuery,
+                            variables: {
+                                address: a,
+                                signature: sig,
+                                message: loginMsg,
+                            },
+                        }),
+                    });
+                    const loginJson = await loginRes.json();
+                    const data = loginJson?.data?.loginWithWallet;
+                    if (data?.success && data?.token) {
+                        localStorage.setItem(
+                            "web3auth:session",
+                            JSON.stringify({
+                                token: data.token,
+                                address: data.address || a,
+                            }),
+                        );
+                    }
+                } catch {
+                    console.warn(
+                        "[web3auth] Failed to get API token for WalletConnect",
+                    );
+                }
+            }
+
             return { success: true };
         } catch (e) {
             const msg =
@@ -1120,8 +1206,6 @@ export function Web3AuthProvider({
                     <LoginModal
                         appName={uiConfig?.appName ?? "DTOKEN"}
                         theme={uiConfig?.mode ?? "dark"}
-                        primaryColor={uiConfig?.primaryColor}
-                        primaryText={uiConfig?.primaryText}
                         walletInstalled={walletInstalled}
                         walletConnectEnabled={Boolean(
                             configRef.current.web3AuthOptions.walletConnect
@@ -1176,8 +1260,6 @@ export function Web3AuthProvider({
                     open={showWalletUIModal}
                     onClose={() => setShowWalletUIModal(false)}
                     theme={uiConfig?.mode ?? "dark"}
-                    primaryColor={uiConfig?.primaryColor}
-                    primaryText={uiConfig?.primaryText}
                     address={address ?? walletRef.current?.addr ?? null}
                     provider={provider}
                     userInfo={userInfo}

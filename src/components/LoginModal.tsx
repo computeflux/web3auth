@@ -2,6 +2,7 @@ import {
     useState,
     useCallback,
     useMemo,
+    useEffect,
     type CSSProperties,
     type FormEvent,
 } from "react";
@@ -28,8 +29,6 @@ export interface LoginModalProps {
     appName?: string;
     onShowFunding?: () => void;
     theme?: "light" | "dark";
-    primaryColor?: string;
-    primaryText?: string;
     socialProviders?: string[];
     loading?: boolean;
     error?: string | null;
@@ -48,7 +47,7 @@ type ThemeColors = {
     btnPrimary: string;
     btnPrimaryHover: string;
     btnPrimaryDisabled: string;
-    btnPrimaryText: string;
+        btnPrimaryText: "#ffffff",
     btnSecondaryBg: string;
     btnSecondaryBorder: string;
     btnSecondaryText: string;
@@ -61,7 +60,7 @@ type ThemeColors = {
 
 const LIGHT: ThemeColors = {
     overlay: "rgba(0,0,0,0.55)",
-    cardBg: "#ffffff",
+    cardBg: "#fafafa",
     cardShadow: "0 24px 80px rgba(0,0,0,0.28), 0 2px 10px rgba(0,0,0,0.18)",
     text: "#1f1f1f",
     subtext: "#888888",
@@ -69,12 +68,12 @@ const LIGHT: ThemeColors = {
     inputBorder: "#dadce0",
     inputText: "#1f1f1f",
     inputPlaceholder: "#999999",
-    btnPrimary: "#2563eb",
-    btnPrimaryHover: "#1d4ed8",
-    btnPrimaryDisabled: "#a0c4ff",
-    btnPrimaryText: "#ffffff",
-    btnSecondaryBg: "#ffffff",
-    btnSecondaryBorder: "#dadce0",
+    btnPrimary: "#1f1f1f",
+    btnPrimaryHover: "#000000",
+    btnPrimaryDisabled: "#d4d4d4",
+        btnPrimaryText: "#ffffff",
+    btnSecondaryBg: "#f2f2f2",
+    btnSecondaryBorder: "#e0e0e0",
     btnSecondaryText: "#1f1f1f",
     divider: "rgba(128,128,128,0.25)",
     closeColor: "#999999",
@@ -93,10 +92,10 @@ const DARK: ThemeColors = {
     inputBorder: "#2e2e35",
     inputText: "#e4e4e7",
     inputPlaceholder: "#52525b",
-    btnPrimary: "#2563eb",
-    btnPrimaryHover: "#3b82f6",
-    btnPrimaryDisabled: "#1e3a5f",
-    btnPrimaryText: "#ffffff",
+    btnPrimary: "#ffffff",
+    btnPrimaryHover: "#e4e4e7",
+    btnPrimaryDisabled: "#3f3f46",
+        btnPrimaryText: "#121214",
     btnSecondaryBg: "#1a1a1e",
     btnSecondaryBorder: "#2e2e35",
     btnSecondaryText: "#e4e4e7",
@@ -199,8 +198,6 @@ export function LoginModal({
     appName,
     onShowFunding,
     theme: themeOverride,
-    primaryColor,
-    primaryText,
     socialProviders = ["google", "github", "twitter"],
     loading = false,
     error: externalError,
@@ -214,6 +211,16 @@ export function LoginModal({
     const [internalLoading, setInternalLoading] = useState(false);
     const [hoveredSocial, setHoveredSocial] = useState<string | null>(null);
     const [walletSearch, setWalletSearch] = useState("");
+    const [resendCountdown, setResendCountdown] = useState(0);
+
+    // Countdown timer for resend OTP
+    useEffect(() => {
+        if (resendCountdown <= 0) return;
+        const timer = setInterval(() => {
+            setResendCountdown((c) => c - 1);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [resendCountdown]);
 
     const error = externalError ?? internalError;
     const isLoading = loading || internalLoading;
@@ -233,49 +240,49 @@ export function LoginModal({
     }, [themeOverride]);
 
     const theme = useMemo(() => {
-        const base = isDark ? DARK : LIGHT;
-        return primaryColor
-            ? {
-                  ...base,
-                  btnPrimary: primaryColor,
-                  btnPrimaryText: primaryText ?? base.btnPrimaryText,
-              }
-            : base;
-    }, [isDark, primaryColor]);
+        return isDark ? DARK : LIGHT;
+    }, [isDark]);
     const { t } = useTranslation();
     const icons = isDark ? "dark" : "light";
 
     // --- Handlers ---
     const handleRequestOtp = useCallback(
-        async (e: FormEvent) => {
-            e.preventDefault();
+        async (e?: FormEvent) => {
+            e?.preventDefault();
             if (!email.trim() || !email.includes("@")) {
-                setInternalError("Please enter a valid email address");
+                setInternalError(t("login.error_invalid_email"));
                 return;
             }
             setInternalError(null);
             setInternalLoading(true);
             try {
                 const result = await onRequestOtp(email.trim().toLowerCase());
-                if (result.success) setStep("otp");
-                else
+                if (result.success) {
+                    setStep("otp");
+                    setResendCountdown(60);
+                } else {
                     setInternalError(
                         result.error ?? t("login.error_otp_send_failed"),
                     );
+                }
             } catch {
                 setInternalError(t("login.error_network"));
             } finally {
                 setInternalLoading(false);
             }
         },
-        [email, onRequestOtp],
+        [email, onRequestOtp, t],
     );
 
     const handleVerifyOtp = useCallback(
         async (e: FormEvent) => {
             e.preventDefault();
             if (!otp.trim()) {
-                setInternalError("Please enter the code");
+                setInternalError(t("login.error_empty_code"));
+                return;
+            }
+            if (otp.trim().length < 6) {
+                setInternalError(t("login.error_code_length"));
                 return;
             }
             setInternalError(null);
@@ -295,7 +302,7 @@ export function LoginModal({
                 setInternalLoading(false);
             }
         },
-        [email, otp, onVerifyOtp],
+        [email, otp, onVerifyOtp, t],
     );
 
     const handleSocial = useCallback(
@@ -485,7 +492,7 @@ export function LoginModal({
                     height: 48,
                     borderRadius: 999,
                     border: `1px solid ${theme.btnSecondaryBorder}`,
-                    background: "transparent",
+                    background: theme.btnSecondaryBg,
                     color: theme.text,
                     fontSize: 14,
                     fontWeight: 600,
@@ -574,7 +581,7 @@ export function LoginModal({
         height: 40,
         borderRadius: 8,
         border: "none",
-        background: "transparent",
+        background: theme.btnSecondaryBg,
         color: theme.subtext,
         fontSize: 13,
         cursor: "pointer",
@@ -727,7 +734,7 @@ export function LoginModal({
                                             border: `1px solid ${theme.btnSecondaryBorder}`,
                                             background: isHovered
                                                 ? theme.inputBg
-                                                : "transparent",
+                                                : theme.btnSecondaryBg,
                                             color: theme.text,
                                             cursor: isLoading
                                                 ? "default"
@@ -765,7 +772,7 @@ export function LoginModal({
                                 height: 50,
                                 borderRadius: 999,
                                 border: `1px solid ${theme.btnSecondaryBorder}`,
-                                background: "transparent",
+                                background: theme.btnSecondaryBg,
                                 color: theme.btnSecondaryText,
                                 fontSize: 14,
                                 fontWeight: 600,
@@ -794,7 +801,7 @@ export function LoginModal({
                                 />
                                 <path d="M2 7l10 7 10-7" />
                             </svg>
-                            Continue with Email/Phone
+                            {t("login.continue_email")}
                         </button>
 
                         {/* OR divider */}
@@ -854,7 +861,7 @@ export function LoginModal({
                                     height: 48,
                                     borderRadius: 999,
                                     border: `1px solid ${theme.btnSecondaryBorder}`,
-                                    background: "transparent",
+                                    background: theme.btnSecondaryBg,
                                     color: theme.subtext,
                                     fontSize: 14,
                                     fontWeight: 600,
@@ -906,7 +913,7 @@ export function LoginModal({
                                     height: 36,
                                     borderRadius: 999,
                                     border: `1px solid ${theme.btnSecondaryBorder}`,
-                                    background: "transparent",
+                                    background: theme.btnSecondaryBg,
                                     color: theme.text,
                                     cursor: isLoading ? "default" : "pointer",
                                     display: "inline-flex",
@@ -964,13 +971,13 @@ export function LoginModal({
                                 marginBottom: 6,
                             }}
                         >
-                            Email address
+                            {t("login.email_address")}
                         </label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="you@example.com"
+                            placeholder={t("login.email_placeholder")}
                             disabled={isLoading}
                             autoFocus
                             style={inputStyle()}
@@ -1042,6 +1049,32 @@ export function LoginModal({
                                 ? t("login.verifying")
                                 : t("login.verify_code")}
                         </button>
+                        {resendCountdown > 0 ? (
+                            <div
+                                style={{
+                                    ...ghostBtn,
+                                    fontSize: 13,
+                                    cursor: "default",
+                                    opacity: 0.6,
+                                }}
+                            >
+                                {t("login.resend_in", {
+                                    seconds: String(resendCountdown),
+                                })}
+                            </div>
+                        ) : (
+                            <button
+                                type="button"
+                                disabled={isLoading}
+                                onClick={() => {
+                                    setInternalError(null);
+                                    void handleRequestOtp();
+                                }}
+                                style={ghostBtn}
+                            >
+                                {t("login.resend_code")}
+                            </button>
+                        )}
                         <button
                             type="button"
                             disabled={isLoading}
