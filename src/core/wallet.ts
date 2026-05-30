@@ -435,7 +435,11 @@ export class RemoteWalletEngine {
 
         const json = await res.json();
         if (json.errors) {
-            throw new Error(json.errors[0]?.message ?? `Signing failed`);
+            const errMsg = json.errors[0]?.message ?? `Signing failed`;
+            if (res.status === 401 || /unauthorized|invalid token|expired|authentication|登录过期|token/i.test(errMsg)) {
+                this.emit("disconnect", { reason: "auth_expired", message: errMsg });
+            }
+            throw new Error(errMsg);
         }
 
         const data =
@@ -444,7 +448,11 @@ export class RemoteWalletEngine {
                 : json.data?.signMessage;
 
         if (!data || data.status === "error") {
-            throw new Error(data?.error ?? "Signing failed");
+            const errMsg = data?.error ?? "Signing failed";
+            if (/unauthorized|invalid token|expired|authentication|登录过期|token/i.test(errMsg)) {
+                this.emit("disconnect", { reason: "auth_expired", message: errMsg });
+            }
+            throw new Error(errMsg);
         }
         return data.result;
     }
