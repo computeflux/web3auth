@@ -47,7 +47,7 @@ type ThemeColors = {
     btnPrimary: string;
     btnPrimaryHover: string;
     btnPrimaryDisabled: string;
-        btnPrimaryText: "#ffffff",
+    btnPrimaryText: string;
     btnSecondaryBg: string;
     btnSecondaryBorder: string;
     btnSecondaryText: string;
@@ -71,7 +71,7 @@ const LIGHT: ThemeColors = {
     btnPrimary: "#1f1f1f",
     btnPrimaryHover: "#000000",
     btnPrimaryDisabled: "#d4d4d4",
-        btnPrimaryText: "#ffffff",
+    btnPrimaryText: "#ffffff",
     btnSecondaryBg: "#f2f2f2",
     btnSecondaryBorder: "#e0e0e0",
     btnSecondaryText: "#1f1f1f",
@@ -95,7 +95,7 @@ const DARK: ThemeColors = {
     btnPrimary: "#ffffff",
     btnPrimaryHover: "#e4e4e7",
     btnPrimaryDisabled: "#3f3f46",
-        btnPrimaryText: "#121214",
+    btnPrimaryText: "#121214",
     btnSecondaryBg: "#1a1a1e",
     btnSecondaryBorder: "#2e2e35",
     btnSecondaryText: "#e4e4e7",

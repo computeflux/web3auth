@@ -119,6 +119,7 @@ function detectInjectedWallets(): Partial<Record<WalletKey, boolean>> {
 
 export interface Web3AuthContextValue {
     // --- Auth state ---
+    isInitialized: boolean;
     isConnected: boolean;
     isConnecting: boolean;
     provider: IEIP1193Provider | null;
@@ -179,6 +180,7 @@ export function Web3AuthProvider({
     } = config.web3AuthOptions;
 
     // -- Auth state --
+    const [isInitialized, setIsInitialized] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [provider, setProvider] = useState<IEIP1193Provider | null>(null);
@@ -408,7 +410,10 @@ export function Web3AuthProvider({
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // -- Login modal state --
+    // Mark initialization complete after session restoration attempt
+    useEffect(() => {
+        setIsInitialized(true);
+    }, []);
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [showWalletUIModal, setShowWalletUIModal] = useState(false);
     const [showTopUpModal, setShowTopUpModal] = useState(false);
@@ -1161,6 +1166,7 @@ export function Web3AuthProvider({
 
     const value: Web3AuthContextValue = useMemo(
         () => ({
+            isInitialized,
             isConnected,
             isConnecting,
             provider,
@@ -1179,6 +1185,7 @@ export function Web3AuthProvider({
             web3Auth,
         }),
         [
+            isInitialized,
             isConnected,
             isConnecting,
             provider,
@@ -1344,6 +1351,7 @@ function useWeb3AuthContext(): Web3AuthContextValue {
 export function useWeb3Auth() {
     const ctx = useWeb3AuthContext();
     return {
+        isInitialized: ctx.isInitialized,
         web3Auth: ctx.web3Auth,
         isConnected: ctx.isConnected,
         provider: ctx.provider,

@@ -29,7 +29,7 @@ type ThemeColors = {
     btn: string;
     btnHover: string;
     btnDisabled: string;
-        btnText: "#ffffff",
+    btnText: string;
     softBorder: string;
     panelBg: string;
     tagBg: string;
@@ -49,7 +49,7 @@ const LIGHT: ThemeColors = {
     btn: "#1f1f1f",
     btnHover: "#000000",
     btnDisabled: "#1f1f1f",
-        btnText: "#ffffff",
+    btnText: "#ffffff",
     softBorder: "rgba(0,0,0,0.08)",
     panelBg: "rgba(250,250,250,0.85)",
     tagBg: "rgba(0,0,0,0.05)",
@@ -68,7 +68,7 @@ const DARK: ThemeColors = {
     btn: "#e4e4e7",
     btnHover: "#ffffff",
     btnDisabled: "#3f3f46",
-        btnText: "#121214",
+    btnText: "#121214",
     softBorder: "rgba(255,255,255,0.10)",
     panelBg: "rgba(18,18,20,0.72)",
     tagBg: "rgba(255,255,255,0.08)",
