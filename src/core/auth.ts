@@ -414,11 +414,12 @@ export class AuthClient {
                 code_challenge: pkce.challenge,
                 code_challenge_method: "S256",
             });
-            authUrl = `https://twitter.com/i/oauth2/authorize?${params}`;
+            authUrl = `https://x.com/i/oauth2/authorize?${params}`;
             popupName = "twitter_oauth";
             expectedType = "twitter_oauth_callback";
         }
 
+        console.log(authUrl)
         const popup = window.open(authUrl, popupName, "width=500,height=700");
 
         if (!popup) {

@@ -1056,6 +1056,8 @@ export function LoginModal({
                                     fontSize: 13,
                                     cursor: "default",
                                     opacity: 0.6,
+                                    textAlign: "center",
+                                    lineHeight: "40px"
                                 }}
                             >
                                 {t("login.resend_in", {
