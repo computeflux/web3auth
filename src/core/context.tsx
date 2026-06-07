@@ -29,6 +29,7 @@ import {
 import EthereumProvider from "@walletconnect/ethereum-provider";
 import { AuthClient } from "./auth";
 import { RemoteWalletEngine } from "./wallet";
+import { verifySession } from "./session";
 import { LoginModal } from "../components/LoginModal";
 import WalletUIModal from "../components/WalletUIModal";
 import TopUpModal from "../components/TopUpModal";
@@ -723,9 +724,9 @@ export function Web3AuthProvider({
     );
 
     const handleSocialLogin = useCallback(
-        async (provider: string) => {
+        async (provider: string, redirectUri?: string) => {
             const auth = authRef.current!;
-            const result = await auth.socialLogin(provider);
+            const result = await auth.socialLogin(provider, redirectUri);
             if (
                 result.success &&
                 result.userInfo &&
@@ -1068,6 +1069,23 @@ export function Web3AuthProvider({
         }
     }, []);
 
+    // -- Session health check: auto-disconnect when session expires --
+    // 仅在连接建立时检查一次，避免定时轮询增加后端负载
+    useEffect(() => {
+        if (!isConnected || !authBackendUrl) return;
+        let cancelled = false;
+        void (async () => {
+            if (cancelled) return;
+            const result = await verifySession(authBackendUrl);
+            if (!result.valid && !cancelled) {
+                await disconnect();
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [isConnected, authBackendUrl, disconnect]);
+
     // -- Switch chain --
     const switchChain = useCallback(async (params: { chainId: string }) => {
         if (walletRef.current) {
@@ -1075,11 +1093,13 @@ export function Web3AuthProvider({
             setChainId(params.chainId);
             return;
         }
+
         // injected wallet / walletConnect: use provider directly
         const p = providerRef.current ?? wcProviderRef.current;
         if (!p) {
             throw new Error("Wallet not initialized");
         }
+
         await p.request({
             method: "wallet_switchEthereumChain",
             params: [{ chainId: params.chainId }],

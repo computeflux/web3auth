@@ -1,4 +1,10 @@
-import { useState, useCallback, useEffect, type CSSProperties } from "react";
+import {
+    useState,
+    useCallback,
+    useEffect,
+    useRef,
+    type CSSProperties,
+} from "react";
 import { createPortal } from "react-dom";
 import {
     validatePassword,
@@ -143,6 +149,9 @@ export default function ConfirmSignModal({
     const [isNew, setIsNew] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [checking, setChecking] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const overlayRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!open || !backendUrl || !token) return;
@@ -159,6 +168,19 @@ export default function ConfirmSignModal({
             })
             .finally(() => setChecking(false));
     }, [open, backendUrl, token]);
+
+    // 弹窗打开且检测完成后，自动聚焦到密码输入框
+    useEffect(() => {
+        if (open && !checking) {
+            const timer = setTimeout(() => {
+                inputRef.current?.focus();
+            }, 150);
+            return () => clearTimeout(timer);
+        }
+    }, [open, checking]);
+
+    // 嵌套 modal 点击穿透防护：card / overlay 级别的 stopPropagation
+    // 已足够阻止事件冒泡到下层 modal，不需要 document capture 阶段拦截
 
     const clear = () => {
         setPassword("");
@@ -239,6 +261,7 @@ export default function ConfirmSignModal({
 
     return createPortal(
         <div
+            ref={overlayRef}
             data-web3auth-modal="true"
             style={{
                 position: "fixed",
@@ -251,19 +274,24 @@ export default function ConfirmSignModal({
                 justifyContent: "center",
                 fontFamily:
                     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                pointerEvents: "all",
+                pointerEvents: "auto",
             }}
-            onClick={(e) => {
+            onPointerDown={(e) => {
                 e.stopPropagation();
                 if (e.target === e.currentTarget) {
                     onCancel();
                     clear();
                 }
             }}
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
         >
             <div
+                ref={dialogRef}
+                tabIndex={-1}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
                 style={{
                     width: 360,
                     maxWidth: "calc(100% - 32px)",
@@ -272,6 +300,7 @@ export default function ConfirmSignModal({
                     background: t.cardBg,
                     boxShadow: t.cardShadow,
                     color: t.text,
+                    outline: "none",
                 }}
             >
                 <div
@@ -316,97 +345,44 @@ export default function ConfirmSignModal({
                     </div>
                 </div>
 
-                <div style={{ position: "relative", marginBottom: 12 }}>
-                    <input
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder={
-                            isNew ? "设置密码（≥8位，含字母+数字）" : "输入密码"
-                        }
-                        style={{
-                            width: "100%",
-                            height: 44,
-                            borderRadius: 10,
-                            border: `2px solid ${t.pinBorder}`,
-                            background: t.pinBox,
-                            color: t.text,
-                            fontSize: 15,
-                            padding: "0 42px 0 14px",
-                            outline: "none",
-                        }}
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                        style={{
-                            position: "absolute",
-                            right: 8,
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 4,
-                            color: t.subtext,
-                            display: "flex",
-                            alignItems: "center",
-                        }}
-                    >
-                        {showPassword ? (
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                                <line x1="2" x2="22" y1="2" y2="22" />
-                            </svg>
-                        ) : (
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                                <circle cx="12" cy="12" r="3" />
-                            </svg>
-                        )}
-                    </button>
-                </div>
-
-                {isNew && (
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSubmit();
+                    }}
+                >
                     <div style={{ position: "relative", marginBottom: 12 }}>
                         <input
-                            type={showPassword ? "text" : "password"}
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="确认密码"
-                            style={{
-                                width: "100%",
-                                height: 44,
-                                borderRadius: 10,
-                                border: `2px solid ${t.pinBorder}`,
-                                background: t.pinBox,
-                                color: t.text,
-                                fontSize: 15,
-                                padding: "0 42px 0 14px",
-                                outline: "none",
-                            }}
+                            ref={inputRef}
+                            type="text"
+                            name="sign-password"
+                            autoComplete={
+                                isNew ? "new-password" : "current-password"
+                            }
+                            tabIndex={0}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder={
+                                isNew
+                                    ? "设置密码（≥8位，含字母+数字）"
+                                    : "输入密码"
+                            }
+                            style={
+                                {
+                                    width: "100%",
+                                    height: 44,
+                                    borderRadius: 10,
+                                    border: `2px solid ${t.pinBorder}`,
+                                    background: t.pinBox,
+                                    color: t.text,
+                                    fontSize: 15,
+                                    padding: "0 42px 0 14px",
+                                    outline: "none",
+                                    WebkitTextSecurity: showPassword
+                                        ? "none"
+                                        : "disc",
+                                } as React.CSSProperties
+                            }
                         />
                         <button
                             type="button"
@@ -460,7 +436,90 @@ export default function ConfirmSignModal({
                             )}
                         </button>
                     </div>
-                )}
+
+                    {isNew && (
+                        <div style={{ position: "relative", marginBottom: 12 }}>
+                            <input
+                                type="text"
+                                name="sign-confirm-password"
+                                autoComplete="new-password"
+                                tabIndex={0}
+                                value={confirmPassword}
+                                onChange={(e) =>
+                                    setConfirmPassword(e.target.value)
+                                }
+                                placeholder="确认密码"
+                                style={
+                                    {
+                                        width: "100%",
+                                        height: 44,
+                                        borderRadius: 10,
+                                        border: `2px solid ${t.pinBorder}`,
+                                        background: t.pinBox,
+                                        color: t.text,
+                                        fontSize: 15,
+                                        padding: "0 42px 0 14px",
+                                        outline: "none",
+                                        WebkitTextSecurity: showPassword
+                                            ? "none"
+                                            : "disc",
+                                    } as React.CSSProperties
+                                }
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((v) => !v)}
+                                style={{
+                                    position: "absolute",
+                                    right: 8,
+                                    top: "50%",
+                                    transform: "translateY(-50%)",
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    padding: 4,
+                                    color: t.subtext,
+                                    display: "flex",
+                                    alignItems: "center",
+                                }}
+                            >
+                                {showPassword ? (
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                                        <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                                        <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                                        <line x1="2" x2="22" y1="2" y2="22" />
+                                    </svg>
+                                ) : (
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
+                    )}
+                </form>
 
                 {error && (
                     <div

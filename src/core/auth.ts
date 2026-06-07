@@ -270,7 +270,7 @@ export class AuthClient {
      *    Google 回调到一个中间页面，该页面用 code 换 id_token，
      *    解析后通过 postMessage 传回前端。
      */
-    async socialLogin(rawProvider: string): Promise<AuthResponse> {
+    async socialLogin(rawProvider: string, redirectUri?: string): Promise<AuthResponse> {
         const provider = rawProvider.trim().toLowerCase();
         if (provider === "google") {
             if (!this.googleClientId) {
@@ -279,7 +279,7 @@ export class AuthClient {
                     error: "Google Client ID not configured. Set VITE_GOOGLE_CLIENT_ID in .env",
                 };
             }
-            return this.socialLoginViaPopup("google");
+            return this.socialLoginViaPopup("google", redirectUri);
         }
 
         if (provider === "github") {
@@ -289,7 +289,7 @@ export class AuthClient {
                     error: "GitHub Client ID not configured. Set VITE_GITHUB_CLIENT_ID in .env",
                 };
             }
-            return this.socialLoginViaPopup("github");
+            return this.socialLoginViaPopup("github", redirectUri);
         }
 
         if (provider === "twitter") {
@@ -299,7 +299,7 @@ export class AuthClient {
                     error: "Twitter Client ID not configured. Set VITE_TWITTER_CLIENT_ID in .env",
                 };
             }
-            return this.socialLoginViaPopup("twitter");
+            return this.socialLoginViaPopup("twitter", redirectUri);
         }
 
         return {
@@ -314,6 +314,7 @@ export class AuthClient {
      */
     private async socialLoginViaPopup(
         provider: "google" | "github" | "twitter",
+        customRedirectUri?: string,
     ): Promise<AuthResponse> {
         const useCodeFlow = Boolean(this.config.backendUrl);
         let state: string;
@@ -475,7 +476,7 @@ export class AuthClient {
                         });
                         return;
                     }
-                    this.exchangeCodeForSeed(provider, e.data.code, verifier)
+                    this.exchangeCodeForSeed(provider, e.data.code, verifier, customRedirectUri)
                         .then(resolve)
                         .catch((err) =>
                             resolve({
@@ -488,7 +489,7 @@ export class AuthClient {
 
                 // code 流：有 authorization code，发到后端交换 token 并获取种子（Google/GitHub）
                 if (e.data.code && this.config.backendUrl) {
-                    this.exchangeCodeForSeed(provider, e.data.code)
+                    this.exchangeCodeForSeed(provider, e.data.code, undefined, customRedirectUri)
                         .then(resolve)
                         .catch((err) =>
                             resolve({
@@ -527,15 +528,16 @@ export class AuthClient {
         provider: string,
         code: string,
         codeVerifier?: string,
+        redirectUri?: string,
     ): Promise<AuthResponse> {
         try {
-            const query = `mutation($provider:String!,$code:String,$codeVerifier:String){socialLogin(provider:$provider,code:$code,codeVerifier:$codeVerifier){success token address error userInfo{email name profileImage typeOfLogin}}}`;
+            const query = `mutation($provider:String!,$code:String,$codeVerifier:String,$redirectUri:String){socialLogin(provider:$provider,code:$code,codeVerifier:$codeVerifier,redirectUri:$redirectUri){success token address error userInfo{email name profileImage typeOfLogin}}}`;
             const res = await fetch(`${this.config.backendUrl}/gql`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     query,
-                    variables: { provider, code, codeVerifier },
+                    variables: { provider, code, codeVerifier, redirectUri },
                 }),
             });
             if (!res.ok) {

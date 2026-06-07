@@ -69,6 +69,8 @@ export class RemoteWalletEngine {
     private opts: RemoteWalletOptions;
     /** 短期签名 token（由 challenge-response 验证后获取） */
     signToken: string = "";
+    /** 本地追踪的 pending nonce，解决连续交易 nonce 重复问题 */
+    private pendingNonce: number | null = null;
 
     constructor(opts: RemoteWalletOptions) {
         this.opts = opts;
@@ -234,30 +236,88 @@ export class RemoteWalletEngine {
                 let gas = normalizeHex(tx.gas);
                 let gasPrice = normalizeHex(tx.gasPrice) || normalizeHex(tx.maxFeePerGas);
 
-                if (!nonce || !gas || !gasPrice) {
-                    try {
-                        const [n, gp, eg] = await Promise.all([
-                            this.publicClient.getTransactionCount({
+                // --- nonce 管理：支持连续交易 ---
+                if (!nonce) {
+                    if (this.pendingNonce !== null) {
+                        // 使用本地追踪的 pending nonce（上笔交易尚未确认）
+                        nonce = `0x${this.pendingNonce.toString(16)}`;
+                    } else {
+                        try {
+                            // 优先尝试获取 pending 状态的 nonce（含 mempool）
+                            const pendingCount = await this.publicClient.getTransactionCount({
                                 address: this.address,
-                            }),
+                                blockTag: "pending",
+                            });
+                            nonce = `0x${pendingCount.toString(16)}`;
+                        } catch {
+                            // 回退到 latest
+                            try {
+                                const latestCount = await this.publicClient.getTransactionCount({
+                                    address: this.address,
+                                });
+                                nonce = `0x${latestCount.toString(16)}`;
+                            } catch {
+                                nonce = "0x0";
+                            }
+                        }
+                    }
+                }
+
+                if (!gas || !gasPrice) {
+                    try {
+                        // 规范化 value（可能是字符串/number/bigint）
+                        let estimateValue: bigint | undefined;
+                        if (tx.value !== undefined && tx.value !== null) {
+                            if (typeof tx.value === "bigint") estimateValue = tx.value;
+                            else if (typeof tx.value === "number") estimateValue = BigInt(tx.value);
+                            else if (typeof tx.value === "string") {
+                                const v = tx.value.trim();
+                                estimateValue = v === "" || v === "0" || v === "0x0" ? 0n : BigInt(v);
+                            }
+                        }
+
+                        const [gp, eg] = await Promise.all([
                             this.publicClient.getGasPrice(),
                             hasData
                                 ? this.publicClient.estimateGas({
-                                      from: this.address,
+                                      account: this.address,
                                       to: tx.to as `0x${string}`,
                                       data: tx.data as `0x${string}`,
-                                      value: tx.value as bigint,
+                                      value: estimateValue ?? 0n,
                                   } as any)
                                 : 21000n,
                         ]);
-                        if (!nonce) nonce = n.toString(16);
-                        if (!gasPrice) gasPrice = gp.toString(16);
-                        if (!gas) gas = ((eg * 15n) / 10n).toString(16);
-                    } catch {
-                        if (!nonce) nonce = "0";
-                        if (!gas) gas = hasData ? "493e0" : "5208";
+                        if (!gasPrice) gasPrice = `0x${gp.toString(16)}`;
+                        // 空账户状态写入会让实际 gas 远超估算，用 2 倍缓冲 + 固定兜底
+                        if (!gas) {
+                            const buffered = eg * 2n;
+                            const MIN_GAS = hasData ? 2_000_000n : 21000n;
+                            gas = `0x${(buffered > MIN_GAS ? buffered : MIN_GAS).toString(16)}`;
+                        }
+                        console.log("[wallet] estimateGas success:", {
+                            estimated: eg.toString(),
+                            buffered: (eg * 2n).toString(),
+                            finalGas: gas,
+                            gasPrice,
+                        });
+                    } catch (e) {
+                        console.warn("[wallet] estimateGas failed:", e);
+                        // 默认 gas：合约调用 2,000,000 / 普通转账 21,000
+                        if (!gas) gas = hasData ? "0x1e8480" : "0x5208";
+                        console.log("[wallet] fallback gas:", gas);
                     }
                 }
+
+                // 打印最终交易参数，确保 gas 被正确传递
+                console.log("[wallet] raw tx keys:", Object.keys(tx), "values:", Object.fromEntries(Object.entries(tx).map(([k, v]) => [k, typeof v === "string" ? v.slice(0, 80) : v])));
+                console.log("[wallet] eth_sendTransaction tx:", {
+                    to: tx.to,
+                    gas,
+                    gasPrice,
+                    nonce,
+                    hasData,
+                    data: (tx.data as string)?.slice(0, 80),
+                });
 
                 const rawTx = (await this.backendSign("sign-transaction", {
                     token: signToken || this.token,
@@ -277,6 +337,12 @@ export class RemoteWalletEngine {
                     this.rpcTargets[this.chainId] ??
                     Object.values(this.rpcTargets)[0];
                 const hash = await this.broadcast(rpcUrl, rawTx);
+                // 更新本地 pending nonce，下笔交易使用递增后的值
+                try {
+                    this.pendingNonce = parseInt(nonce, 16) + 1;
+                } catch {
+                    /* ignore parse error */
+                }
                 const txUrl = this.opts.explorerUrl
                     ? `${this.opts.explorerUrl}/tx/${hash}`
                     : undefined;

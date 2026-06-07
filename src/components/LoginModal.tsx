@@ -19,6 +19,7 @@ export interface LoginModalProps {
     ) => Promise<{ success: boolean; error?: string }>;
     onSocialLogin?: (
         provider: string,
+        redirectUri?: string,
     ) => Promise<{ success: boolean; error?: string }>;
     onWalletLogin?: (
         wallet: string,
@@ -306,12 +307,12 @@ export function LoginModal({
     );
 
     const handleSocial = useCallback(
-        async (provider: string) => {
+        async (provider: string, redirectUri?: string) => {
             if (!onSocialLogin) return;
             setInternalError(null);
             setInternalLoading(true);
             try {
-                const result = await onSocialLogin(provider);
+                const result = await onSocialLogin(provider, redirectUri);
                 if (!result.success)
                     setInternalError(
                         result.error ?? t("login.error_social_failed"),
@@ -605,11 +606,13 @@ export function LoginModal({
                     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 pointerEvents: "all",
             }}
-            onClick={(e) => {
+            onPointerDown={(e) => {
+                e.stopPropagation();
                 if (e.target === e.currentTarget) onClose();
             }}
         >
             <div
+                onPointerDown={(e) => e.stopPropagation()}
                 style={{
                     width: "100%",
                     maxWidth: 400,
@@ -713,7 +716,7 @@ export function LoginModal({
                                         key={provider}
                                         type="button"
                                         disabled={isLoading}
-                                        onClick={() => handleSocial(provider)}
+                                        onClick={() => handleSocial(provider, `${window.location.origin}/oauth/callback.html`)}
                                         onMouseEnter={() =>
                                             setHoveredSocial(provider)
                                         }
@@ -1057,7 +1060,7 @@ export function LoginModal({
                                     cursor: "default",
                                     opacity: 0.6,
                                     textAlign: "center",
-                                    lineHeight: "40px"
+                                    lineHeight: "40px",
                                 }}
                             >
                                 {t("login.resend_in", {

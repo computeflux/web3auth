@@ -625,17 +625,33 @@ export default function WalletUIModal(props: WalletUIModalProps) {
             .request({ method: "eth_gasPrice", params: [] })
             .then((gp) => setFetchedGasPrice(BigInt(gp as string)))
             .catch(() => setFetchedGasPrice(null));
-        // 估算转账 gas（Paseo 只需要 ~826）
+        // 估算转账 gas：使用实际目标地址 + 非零值，因为向新账户（冷地址）转账需额外 gas（~48,600 vs ~21,000）
         if (addr) {
+            const to = (sendTo || "").trim();
+            // 若用户已输入有效地址则用该地址估算
+            const estTo = isAddress(to) ? to : addr;
+            // 必须用非零值估算，因为向余额为 0 的新地址转账会触发账户创建，需要更多 gas
+            let estValue: string;
+            if (estTo !== addr) {
+                // 外部目标地址：1 wei 足以触发新账户 gas 计算
+                estValue = "0x1";
+            } else {
+                // 没有有效目标地址时用微量金额做基准估算
+                try {
+                    estValue = toHex(parseUnits("0.0001", chainMeta.decimals));
+                } catch {
+                    estValue = "0x1";
+                }
+            }
             props.provider
                 .request({
                     method: "eth_estimateGas",
-                    params: [{ from: addr, to: addr, value: "0x0" }],
+                    params: [{ from: addr, to: estTo, value: estValue }],
                 })
                 .then((g) => setEstimatedGas(BigInt(g as string)))
                 .catch(() => {});
         }
-    }, [sendOpen, props.provider, addr]);
+    }, [sendOpen, props.provider, addr, sendTo, chainMeta.decimals]);
 
     useEffect(() => {
         if (!props.open) {
@@ -646,7 +662,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
             setSendBusy(false);
             setGasMultiplier(1.0);
             setFetchedGasPrice(null);
-            setEstimatedGas(21000n);
+            setEstimatedGas(50000n);
         }
     }, [props.open]);
 
@@ -670,14 +686,13 @@ export default function WalletUIModal(props: WalletUIModalProps) {
     return createPortal(
         <div
             style={overlayStyle}
-            role="dialog"
-            aria-modal="true"
             aria-label={`当前网络 ${chainMeta.name}`}
-            onMouseDown={(e) => {
+            onPointerDown={(e) => {
+                e.stopPropagation();
                 if (e.target === e.currentTarget) props.onClose();
             }}
         >
-            <div style={cardStyle} onMouseDown={(e) => e.stopPropagation()}>
+            <div style={cardStyle} onPointerDown={(e) => e.stopPropagation()}>
                 {/* 顶栏：当前网络（链图标 + 文案）与登录方式；关闭 */}
                 <div
                     style={{
@@ -929,9 +944,12 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                 alignItems: "center",
                                 justifyContent: "center",
                             }}
-                            onClick={() => {
-                                setSendOpen(false);
-                                setSendErr(null);
+                            onPointerDown={(e) => {
+                                e.stopPropagation();
+                                if (e.target === e.currentTarget) {
+                                    setSendOpen(false);
+                                    setSendErr(null);
+                                }
                             }}
                         >
                             <div
@@ -943,7 +961,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                     background: theme.cardBg,
                                     boxShadow: theme.cardShadow,
                                 }}
-                                onClick={(e) => e.stopPropagation()}
+                                onPointerDown={(e) => e.stopPropagation()}
                             >
                                 <div
                                     style={{

@@ -1,4 +1,10 @@
-import { useState, useCallback, useMemo, useEffect, type CSSProperties } from "react";
+import {
+    useState,
+    useCallback,
+    useMemo,
+    useEffect,
+    type CSSProperties,
+} from "react";
 import { createPortal } from "react-dom";
 import { copyText } from "../core/clipboard";
 
@@ -300,7 +306,9 @@ export default function TopUpModal({
     const [step, setStep] = useState<"main" | "receive" | "transfer">("main");
     const [copied, setCopied] = useState(false);
     const [hoveredOption, setHoveredOption] = useState<string | null>(null);
-    const [selectedToken, setSelectedToken] = useState<TokenInfo & { isNative: boolean }>({
+    const [selectedToken, setSelectedToken] = useState<
+        TokenInfo & { isNative: boolean }
+    >({
         name: nativeName,
         symbol: nativeSymbol,
         decimals: 18,
@@ -310,11 +318,17 @@ export default function TopUpModal({
     // Build token list for current chain
     const tokenList = useMemo(() => {
         const list: (TokenInfo & { isNative: boolean })[] = [
-            { name: nativeName, symbol: nativeSymbol, decimals: 18, isNative: true },
+            {
+                name: nativeName,
+                symbol: nativeSymbol,
+                decimals: 18,
+                isNative: true,
+            },
         ];
         if (!chainId || !tokensByChainId) return list;
         const cid = String(chainId).toLowerCase();
-        const tokens = tokensByChainId[cid] ?? tokensByChainId[String(chainId)] ?? [];
+        const tokens =
+            tokensByChainId[cid] ?? tokensByChainId[String(chainId)] ?? [];
         for (const tk of tokens) {
             list.push({ ...tk, isNative: false });
         }
@@ -478,14 +492,15 @@ export default function TopUpModal({
 
     // ---- Receive view ----
     if (step === "receive") {
-        return (
+        return createPortal(
             <div
                 style={overlayStyle}
-                onClick={(e) => {
+                onPointerDown={(e) => {
+                    e.stopPropagation();
                     if (e.target === e.currentTarget) handleClose();
                 }}
             >
-                <div style={cardStyle}>
+                <div style={cardStyle} onPointerDown={(e) => e.stopPropagation()}>
                     <button
                         style={closeBtn}
                         onClick={handleClose}
@@ -626,20 +641,22 @@ export default function TopUpModal({
                         ← Back
                     </button>
                 </div>
-            </div>
+            </div>,
+            document.body,
         );
     }
 
     // ---- Transfer view ----
     if (step === "transfer") {
-        return (
+        return createPortal(
             <div
                 style={overlayStyle}
-                onClick={(e) => {
+                onPointerDown={(e) => {
+                    e.stopPropagation();
                     if (e.target === e.currentTarget) handleClose();
                 }}
             >
-                <div style={cardStyle}>
+                <div style={cardStyle} onPointerDown={(e) => e.stopPropagation()}>
                     <button
                         style={closeBtn}
                         onClick={handleClose}
@@ -804,7 +821,8 @@ export default function TopUpModal({
                         ← Back
                     </button>
                 </div>
-            </div>
+            </div>,
+            document.body,
         );
     }
 
@@ -812,11 +830,12 @@ export default function TopUpModal({
     return createPortal(
         <div
             style={overlayStyle}
-            onClick={(e) => {
+            onPointerDown={(e) => {
+                e.stopPropagation();
                 if (e.target === e.currentTarget) handleClose();
             }}
         >
-            <div style={cardStyle}>
+            <div style={cardStyle} onPointerDown={(e) => e.stopPropagation()}>
                 <button
                     style={closeBtn}
                     onClick={handleClose}
