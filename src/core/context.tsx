@@ -197,6 +197,11 @@ export function Web3AuthProvider({
     const walletRef = useRef<RemoteWalletEngine | null>(null);
     const providerRef = useRef<IEIP1193Provider | null>(null);
     const wcProviderRef = useRef<IEIP1193Provider | null>(null);
+    const addressRef = useRef<string | null>(null);
+    const lastWalletRef = useRef<string | null>(null);
+    const accountsChangedHandlerRef = useRef<
+        ((accounts: unknown) => void) | null
+    >(null);
 
     // Keep refs in sync with config
     const configRef = useRef(config);
@@ -405,6 +410,7 @@ export function Web3AuthProvider({
             setChainId(ws.chainId);
             setIsConnected(true);
             setConnectorName(ws.connectorName);
+            lastWalletRef.current = ws.connectorName;
             setConnectError(null);
         } catch {
             localStorage.removeItem("web3auth:wallet_session");
@@ -832,6 +838,17 @@ export function Web3AuthProvider({
                 const chain = (await picked.request({
                     method: "eth_chainId",
                 })) as string;
+
+                // 请求钱包权限，允许用户授权多个账户，这样后续切换账户时才能触发 accountsChanged
+                try {
+                    await picked.request({
+                        method: "wallet_requestPermissions",
+                        params: [{ eth_accounts: {} }],
+                    });
+                } catch {
+                    // 钱包可能不支持 wallet_requestPermissions，忽略错误继续
+                }
+
                 const accounts = (await picked.request({
                     method: "eth_requestAccounts",
                 })) as string[];
@@ -849,7 +866,10 @@ export function Web3AuthProvider({
                         });
                         finalChain = _defaultChainId;
                     } catch (switchErr: unknown) {
-                        const se = switchErr as { code?: number; message?: string };
+                        const se = switchErr as {
+                            code?: number;
+                            message?: string;
+                        };
                         if (se.code === 4902) {
                             const target = chains.find(
                                 (c) => c.chainId === _defaultChainId,
@@ -898,6 +918,7 @@ export function Web3AuthProvider({
                 setConnectError(null);
                 setShowLoginModal(false);
                 setIsConnecting(false);
+                lastWalletRef.current = wallet;
                 localStorage.setItem(
                     "web3auth:wallet_session",
                     JSON.stringify({
@@ -924,7 +945,8 @@ export function Web3AuthProvider({
                         });
                         const nonceJson = await nonceRes.json();
                         const nonce = nonceJson?.data?.requestWalletNonce;
-                        if (!nonce) throw new Error("Failed to get wallet nonce");
+                        if (!nonce)
+                            throw new Error("Failed to get wallet nonce");
 
                         const sig = (await picked.request({
                             method: "personal_sign",
@@ -968,6 +990,7 @@ export function Web3AuthProvider({
                 // 避免 session health check 在 web3auth:session 写入前触发 disconnect
                 setIsConnected(true);
                 setConnectorName(wallet === "injected" ? "injected" : wallet);
+                lastWalletRef.current = wallet;
 
                 return { success: true };
             } catch (e) {
@@ -1142,6 +1165,7 @@ export function Web3AuthProvider({
             }
             providerRef.current = null;
             wcProviderRef.current = null;
+            lastWalletRef.current = null;
             localStorage.removeItem("web3auth:wallet_session");
             setProvider(null);
             setUserInfo(null);
@@ -1154,6 +1178,61 @@ export function Web3AuthProvider({
             setIsDisconnecting(false);
         }
     }, []);
+
+    // -- accountsChanged listener (injected wallets only) --
+    useEffect(() => {
+        addressRef.current = address;
+    }, [address]);
+
+    useEffect(() => {
+        if (!isConnected) return;
+        const p = providerRef.current as unknown as {
+            on?: (ev: string, fn: (...args: unknown[]) => void) => void;
+            removeListener?: (
+                ev: string,
+                fn: (...args: unknown[]) => void,
+            ) => void;
+        };
+        if (!p?.on) return;
+
+        const wallet = lastWalletRef.current;
+        if (!wallet || wallet === "auth") return;
+
+        const handleAccountsChanged = async (accounts: unknown) => {
+            const accs = accounts as string[];
+            if (accs.length === 0) {
+                await disconnect();
+                return;
+            }
+            const newAddr = accs[0]?.toLowerCase() ?? "";
+            const currentAddr = addressRef.current?.toLowerCase() ?? "";
+            if (newAddr && currentAddr && newAddr !== currentAddr) {
+                await disconnect();
+                if (wallet && wallet !== "injected") {
+                    await connectInjectedWallet(
+                        wallet as
+                            | "metamask"
+                            | "coinbase"
+                            | "rabby"
+                            | "okx"
+                            | "bitget"
+                            | "tokenpocket"
+                            | "trust"
+                            | "imtoken"
+                            | "mathwallet"
+                            | "safe",
+                    );
+                }
+            }
+        };
+
+        p.on("accountsChanged", handleAccountsChanged);
+        accountsChangedHandlerRef.current = handleAccountsChanged;
+        return () => {
+            p.removeListener?.("accountsChanged", handleAccountsChanged);
+            accountsChangedHandlerRef.current = null;
+        };
+    }, [isConnected, disconnect, connectInjectedWallet]);
 
     // -- Session health check: auto-disconnect when session expires --
     // 仅在连接建立时检查一次，避免定时轮询增加后端负载
