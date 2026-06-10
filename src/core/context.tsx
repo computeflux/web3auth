@@ -839,12 +839,62 @@ export function Web3AuthProvider({
                 if (!a)
                     return { success: false, error: "No accounts returned" };
 
+                // Auto-switch to default chain if needed
+                let finalChain = chain;
+                if (chain !== _defaultChainId) {
+                    try {
+                        await picked.request({
+                            method: "wallet_switchEthereumChain",
+                            params: [{ chainId: _defaultChainId }],
+                        });
+                        finalChain = _defaultChainId;
+                    } catch (switchErr: unknown) {
+                        const se = switchErr as { code?: number; message?: string };
+                        if (se.code === 4902) {
+                            const target = chains.find(
+                                (c) => c.chainId === _defaultChainId,
+                            );
+                            if (target) {
+                                await picked.request({
+                                    method: "wallet_addEthereumChain",
+                                    params: [
+                                        {
+                                            chainId: target.chainId,
+                                            chainName: target.displayName,
+                                            rpcUrls: target.rpcTarget
+                                                ? [target.rpcTarget]
+                                                : [],
+                                            nativeCurrency: {
+                                                name:
+                                                    target.tickerName ||
+                                                    target.ticker,
+                                                symbol: target.ticker,
+                                                decimals: target.decimals ?? 18,
+                                            },
+                                            blockExplorerUrls:
+                                                target.blockExplorerUrl
+                                                    ? [target.blockExplorerUrl]
+                                                    : [],
+                                        },
+                                    ],
+                                });
+                                // Retry switch after adding
+                                await picked.request({
+                                    method: "wallet_switchEthereumChain",
+                                    params: [{ chainId: _defaultChainId }],
+                                });
+                                finalChain = _defaultChainId;
+                            }
+                        } else {
+                            throw switchErr;
+                        }
+                    }
+                }
+
                 providerRef.current = picked;
                 setProvider(picked);
                 setAddress(a);
-                setChainId(chain);
-                setIsConnected(true);
-                setConnectorName(wallet === "injected" ? "injected" : wallet);
+                setChainId(finalChain);
                 setConnectError(null);
                 setShowLoginModal(false);
                 setIsConnecting(false);
@@ -863,12 +913,25 @@ export function Web3AuthProvider({
                     try {
                         const timestamp = Math.floor(Date.now() / 1000);
                         const loginMsg = `Login to Web3Auth: ${timestamp}`;
+
+                        const nonceRes = await fetch(`${authBackendUrl}/gql`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                query: `mutation($address:String!){requestWalletNonce(address:$address)}`,
+                                variables: { address: a },
+                            }),
+                        });
+                        const nonceJson = await nonceRes.json();
+                        const nonce = nonceJson?.data?.requestWalletNonce;
+                        if (!nonce) throw new Error("Failed to get wallet nonce");
+
                         const sig = (await picked.request({
                             method: "personal_sign",
-                            params: [loginMsg, a],
+                            params: [loginMsg + nonce, a],
                         })) as string;
 
-                        const loginQuery = `mutation($address:String!,$signature:String!,$message:String!){loginWithWallet(address:$address,signature:$signature,message:$message){success token address error}}`;
+                        const loginQuery = `mutation($address:String!,$signature:String!,$message:String!,$nonce:String!){loginWithWallet(address:$address,signature:$signature,message:$message,nonce:$nonce){success token address error}}`;
                         const loginRes = await fetch(`${authBackendUrl}/gql`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -878,6 +941,7 @@ export function Web3AuthProvider({
                                     address: a,
                                     signature: sig,
                                     message: loginMsg,
+                                    nonce,
                                 },
                             }),
                         });
@@ -899,6 +963,11 @@ export function Web3AuthProvider({
                         );
                     }
                 }
+
+                // 等后端 token 流程完成后（无论成败）再标记为已连接，
+                // 避免 session health check 在 web3auth:session 写入前触发 disconnect
+                setIsConnected(true);
+                setConnectorName(wallet === "injected" ? "injected" : wallet);
 
                 return { success: true };
             } catch (e) {
@@ -965,8 +1034,6 @@ export function Web3AuthProvider({
             setProvider(wc as unknown as IEIP1193Provider);
             setAddress(a);
             setChainId(chain);
-            setIsConnected(true);
-            setConnectorName("walletconnect");
             setConnectError(null);
             setShowLoginModal(false);
             setIsConnecting(false);
@@ -984,12 +1051,25 @@ export function Web3AuthProvider({
                 try {
                     const timestamp = Math.floor(Date.now() / 1000);
                     const loginMsg = `Login to Web3Auth: ${timestamp}`;
+
+                    const nonceRes = await fetch(`${authBackendUrl}/gql`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            query: `mutation($address:String!){requestWalletNonce(address:$address)}`,
+                            variables: { address: a },
+                        }),
+                    });
+                    const nonceJson = await nonceRes.json();
+                    const nonce = nonceJson?.data?.requestWalletNonce;
+                    if (!nonce) throw new Error("Failed to get wallet nonce");
+
                     const sig = (await (wc as any).request({
                         method: "personal_sign",
-                        params: [loginMsg, a],
+                        params: [loginMsg + nonce, a],
                     })) as string;
 
-                    const loginQuery = `mutation($address:String!,$signature:String!,$message:String!){loginWithWallet(address:$address,signature:$signature,message:$message){success token address error}}`;
+                    const loginQuery = `mutation($address:String!,$signature:String!,$message:String!,$nonce:String!){loginWithWallet(address:$address,signature:$signature,message:$message,nonce:$nonce){success token address error}}`;
                     const loginRes = await fetch(`${authBackendUrl}/gql`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -999,6 +1079,7 @@ export function Web3AuthProvider({
                                 address: a,
                                 signature: sig,
                                 message: loginMsg,
+                                nonce,
                             },
                         }),
                     });
@@ -1019,6 +1100,11 @@ export function Web3AuthProvider({
                     );
                 }
             }
+
+            // 等后端 token 流程完成后（无论成败）再标记为已连接，
+            // 避免 session health check 在 web3auth:session 写入前触发 disconnect
+            setIsConnected(true);
+            setConnectorName("walletconnect");
 
             return { success: true };
         } catch (e) {
