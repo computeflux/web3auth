@@ -4,25 +4,16 @@
  *   AuthResponse { success: Boolean! userInfo: UserInfo token: String address: String error: String }
  */
 
+import { getStoredSession } from "./tokenManager";
+
 export interface CheckSessionResult {
     valid: boolean;
     error?: string;
 }
 
-function getSessionToken(): string | null {
-    try {
-        const raw = localStorage.getItem("web3auth:session");
-        if (!raw) return null;
-        const session = JSON.parse(raw);
-        return session?.token ?? null;
-    } catch {
-        return null;
-    }
-}
-
 export async function checkSession(
     backendUrl: string,
-    token: string
+    token: string,
 ): Promise<CheckSessionResult> {
     const query = `query($token:String!){checkSession(token:$token){success error}}`;
     const res = await fetch(`${backendUrl}/gql`, {
@@ -47,11 +38,11 @@ export async function checkSession(
 
 /** 读取本地 token 并验证；若过期返回 valid=false */
 export async function verifySession(
-    backendUrl: string
+    backendUrl: string,
 ): Promise<CheckSessionResult> {
-    const token = getSessionToken();
-    if (!token) {
+    const session = getStoredSession();
+    if (!session?.token) {
         return { valid: false, error: "No session token" };
     }
-    return checkSession(backendUrl, token);
+    return checkSession(backendUrl, session.token);
 }

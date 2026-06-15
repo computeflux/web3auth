@@ -13,6 +13,12 @@
  */
 
 import type { Web3AuthUserInfo } from "./types";
+import {
+    clearStoredSession,
+    getStoredSession,
+    setStoredSession,
+    type StoredSession,
+} from "./tokenManager";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -59,6 +65,8 @@ export interface AuthResponse {
     userInfo?: Web3AuthUserInfo;
     /** API Key for authenticated API calls */
     token?: string;
+    /** Long-lived token used to obtain a new access token after expiry */
+    refreshToken?: string;
     /** Wallet address (derived by backend, returned on login) */
     address?: string;
     error?: string;
@@ -185,7 +193,7 @@ export class AuthClient {
                     clientId: this.config.clientId ?? "",
                 };
                 console.log("[web3auth] verifyOTP variables:", variables);
-                const query = `mutation($email:String!,$otp:String!,$clientId:String!){verifyOTP(email:$email,otp:$otp,clientId:$clientId){success token address error userInfo{email name profileImage typeOfLogin}}}`;
+                const query = `mutation($email:String!,$otp:String!,$clientId:String!){verifyOTP(email:$email,otp:$otp,clientId:$clientId){success token refreshToken address error userInfo{email name profileImage typeOfLogin}}}`;
                 const res = await fetch(`${this.config.backendUrl}/gql`, {
                     method: "POST",
                     credentials: "include",
@@ -255,6 +263,7 @@ export class AuthClient {
             success: true,
             userInfo,
             token: `auth_tee_${Date.now().toString(16).padStart(64, "0")}`,
+            refreshToken: `refresh_tee_${Date.now().toString(16).padStart(64, "0")}`,
             address: MOCK_ADDRESS,
         };
     }
@@ -531,7 +540,7 @@ export class AuthClient {
         redirectUri?: string,
     ): Promise<AuthResponse> {
         try {
-            const query = `mutation($provider:String!,$code:String,$codeVerifier:String,$redirectUri:String){socialLogin(provider:$provider,code:$code,codeVerifier:$codeVerifier,redirectUri:$redirectUri){success token address error userInfo{email name profileImage typeOfLogin}}}`;
+            const query = `mutation($provider:String!,$code:String,$codeVerifier:String,$redirectUri:String){socialLogin(provider:$provider,code:$code,codeVerifier:$codeVerifier,redirectUri:$redirectUri){success token refreshToken address error userInfo{email name profileImage typeOfLogin}}}`;
             const res = await fetch(`${this.config.backendUrl}/gql`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -576,28 +585,17 @@ export class AuthClient {
      */
     async logout(): Promise<void> {
         // Clear locally stored auth data
-        localStorage.removeItem("web3auth:session");
+        clearStoredSession();
         localStorage.removeItem("web3auth:user");
     }
 
     /**
      * Restore session from local storage.
      */
-    restoreSession(): {
-        userInfo: Web3AuthUserInfo;
-        token: string;
-        address: string;
-    } | null {
-        try {
-            const raw = localStorage.getItem("web3auth:session");
-            if (!raw) return null;
-            const session = JSON.parse(raw);
-            if (!session?.userInfo || !session?.token || !session?.address)
-                return null;
-            return session;
-        } catch {
-            return null;
-        }
+    restoreSession(): StoredSession | null {
+        const session = getStoredSession();
+        if (!session?.userInfo) return null;
+        return session;
     }
 
     /**
@@ -607,11 +605,9 @@ export class AuthClient {
         userInfo: Web3AuthUserInfo,
         token: string,
         address: string,
+        refreshToken?: string,
     ): void {
-        localStorage.setItem(
-            "web3auth:session",
-            JSON.stringify({ userInfo, token, address }),
-        );
+        setStoredSession({ userInfo, token, address, refreshToken });
     }
 }
 
