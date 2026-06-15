@@ -36,6 +36,7 @@ import TopUpModal from "../components/TopUpModal";
 import ConfirmTxModal from "../components/ConfirmTxModal";
 import ConfirmSignModal from "../components/ConfirmSignModal";
 import { Web3AuthI18nProvider } from "./i18n";
+import type { Locale } from "./i18n";
 import type {
     CustomChainConfig,
     IEIP1193Provider,
@@ -163,7 +164,7 @@ const Web3AuthContext = createContext<Web3AuthContextValue | null>(null);
 export interface Web3AuthProviderProps {
     config: Web3AuthContextConfig;
     children: ReactNode;
-    locale?: "en" | "zh";
+    locale?: Locale;
 }
 
 export function Web3AuthProvider({
@@ -261,7 +262,7 @@ export function Web3AuthProvider({
     useEffect(() => {
         const session = authRef.current?.restoreSession();
         if (session && authBackendUrl) {
-            setUserInfo(session.userInfo);
+            setUserInfo(session.userInfo || null);
             // Re-initialise remote wallet from session
             const wallet = new RemoteWalletEngine({
                 backendUrl: authBackendUrl,
@@ -284,7 +285,7 @@ export function Web3AuthProvider({
         }
         if (session) {
             // Mock mode: restore user info without a wallet engine
-            setUserInfo(session.userInfo);
+            setUserInfo(session.userInfo || null);
             setAddress(session.address);
             setChainId(_defaultChainId);
             setIsConnected(true);

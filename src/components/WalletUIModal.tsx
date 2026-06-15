@@ -686,7 +686,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
     return createPortal(
         <div
             style={overlayStyle}
-            aria-label={`当前网络 ${chainMeta.name}`}
+            aria-label={`${t("wallet.current_network")} ${chainMeta.name}`}
             onPointerDown={(e) => {
                 e.stopPropagation();
                 if (e.target === e.currentTarget) props.onClose();
@@ -755,7 +755,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                     letterSpacing: 0.02,
                                 }}
                             >
-                                当前网络
+                                {t("wallet.current_network")}
                             </div>
                             <div
                                 style={{
@@ -843,8 +843,8 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                 justifyContent: "center",
                                 padding: 0,
                             }}
-                            aria-label="关闭"
-                            title="关闭"
+                            aria-label={t("wallet.close")}
+                            title={t("wallet.close")}
                         >
                             ×
                         </button>
@@ -982,11 +982,11 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                         marginBottom: 16,
                                     }}
                                 >
-                                    网络 {chainMeta.name}
+                                    {t("wallet.network_label")} {chainMeta.name}
                                     {estimatedSendFee != null && (
                                         <span>
                                             {" "}
-                                            · 网络费 ≈ {estimatedSendFee}{" "}
+                                            {" · "}{t("wallet.network_fee_approx")} {estimatedSendFee}{" "}
                                             {chainMeta.ticker}
                                         </span>
                                     )}
@@ -1085,10 +1085,10 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                             marginBottom: 8,
                                         }}
                                     >
-                                        预估 Gas 费:{" "}
+                                        {t("wallet.estimated_gas_fee")}: {" "}
                                         {estimatedSendFee != null
                                             ? `~${estimatedSendFee.toFixed(6)} ${chainMeta.ticker}`
-                                            : "计算中…"}
+                                            : t("wallet.calculating")}
                                     </div>
                                     <div
                                         style={{
@@ -1103,7 +1103,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                                 color: theme.subtext,
                                             }}
                                         >
-                                            倍率
+                                            {t("wallet.gas_multiplier")}
                                         </span>
                                         <input
                                             type="range"

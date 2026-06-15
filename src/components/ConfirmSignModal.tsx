@@ -12,6 +12,7 @@ import {
     computeResponse,
     computeResponseCached,
 } from "../core/txPassword";
+import { useTranslation, tStatic } from "../core/i18n";
 
 export type SignConfirmProps = {
     open: boolean;
@@ -70,7 +71,7 @@ async function fetchChallenge(backendUrl: string, token: string) {
     const json = await res.json();
     const result = json.data?.getChallenge;
     if (json.errors || !result || result.status !== "success") {
-        throw new Error(result?.error || "获取验证信息失败");
+        throw new Error(result?.error || tStatic("password.error_fetch_challenge"));
     }
     return {
         challenge: result.challenge as string,
@@ -97,7 +98,7 @@ async function fetchVerifyResponse(
     const json = await res.json();
     const result = json.data?.verifyResponse;
     if (json.errors || !result || result.status !== "ok") {
-        throw new Error(result?.error || "验证失败");
+        throw new Error(result?.error || tStatic("password.error_verify_failed"));
     }
     return result.signToken as string;
 }
@@ -129,7 +130,7 @@ async function fetchSetPassword(
         !result ||
         (result.status !== "success" && result.status !== "ok")
     ) {
-        throw new Error(result?.error || "设置密码失败");
+        throw new Error(result?.error || tStatic("password.error_set_failed"));
     }
 }
 
@@ -142,7 +143,8 @@ export default function ConfirmSignModal({
     backendUrl,
     token,
 }: SignConfirmProps) {
-    const t = theme === "light" ? LIGHT : DARK;
+    const colors = theme === "light" ? LIGHT : DARK;
+    const { t } = useTranslation();
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
@@ -163,7 +165,7 @@ export default function ConfirmSignModal({
                 if (err?.message === "password not set") {
                     setIsNew(true);
                 } else {
-                    setError(err?.message || "检测密码状态失败");
+                    setError(err?.message || t("password.error_check_failed"));
                 }
             })
             .finally(() => setChecking(false));
@@ -191,11 +193,11 @@ export default function ConfirmSignModal({
     const handleSubmit = useCallback(async () => {
         setError("");
         if (password.length < 8) {
-            setError("密码至少 8 位");
+            setError(t("password.error_min_length"));
             return;
         }
         if (!backendUrl || !token) {
-            setError("缺少后端配置");
+            setError(t("password.error_missing_backend"));
             return;
         }
 
@@ -204,16 +206,16 @@ export default function ConfirmSignModal({
 
             if (isNew) {
                 if (confirmPassword.length < 8) {
-                    setError("请确认密码");
+                    setError(t("password.error_confirm_required"));
                     return;
                 }
                 if (pwd !== confirmPassword) {
-                    setError("两次密码不一致");
+                    setError(t("password.error_mismatch"));
                     return;
                 }
                 const { ok, msg } = validatePassword(pwd);
                 if (!ok) {
-                    setError(msg || "密码不符合要求");
+                    setError(msg || t("password.error_invalid"));
                     return;
                 }
 
@@ -234,7 +236,7 @@ export default function ConfirmSignModal({
                 if (err?.message === "password not set" && !isNew) {
                     // 未设置密码，切换到设置模式
                     setIsNew(true);
-                    setError("首次使用，请先设置签名密码");
+                    setError(t("password.error_first_use_sign"));
                     return;
                 }
                 throw err;
@@ -253,7 +255,7 @@ export default function ConfirmSignModal({
             clear();
             setIsNew(false);
         } catch (err: any) {
-            setError(err?.message || "密码错误");
+            setError(err?.message || t("password.error_wrong"));
         }
     }, [password, confirmPassword, isNew, backendUrl, token, onConfirm]);
 
@@ -267,7 +269,7 @@ export default function ConfirmSignModal({
                 position: "fixed",
                 inset: 0,
                 zIndex: 100001,
-                background: t.overlay,
+                background: colors.overlay,
                 backdropFilter: "blur(10px)",
                 display: "flex",
                 alignItems: "center",
@@ -297,9 +299,9 @@ export default function ConfirmSignModal({
                     maxWidth: "calc(100% - 32px)",
                     borderRadius: 16,
                     padding: "28px 24px",
-                    background: t.cardBg,
-                    boxShadow: t.cardShadow,
-                    color: t.text,
+                    background: colors.cardBg,
+                    boxShadow: colors.cardShadow,
+                    color: colors.text,
                     outline: "none",
                 }}
             >
@@ -311,7 +313,7 @@ export default function ConfirmSignModal({
                         textAlign: "center",
                     }}
                 >
-                    {isNew ? "设置签名密码" : "输入签名密码"}
+                    {isNew ? t("sign.title_set") : t("sign.title_enter")}
                 </div>
 
                 <div
@@ -319,19 +321,19 @@ export default function ConfirmSignModal({
                         marginBottom: 22,
                         padding: "14px 16px",
                         borderRadius: 12,
-                        background: t.pinBox,
-                        border: `1px solid ${t.pinBorder}`,
+                        background: colors.pinBox,
+                        border: `1px solid ${colors.pinBorder}`,
                     }}
                 >
                     <div style={{ textAlign: "center" }}>
-                        <span style={{ fontSize: 11, color: t.subtext }}>
-                            签名消息
+                        <span style={{ fontSize: 11, color: colors.subtext }}>
+                            {t("sign.message_label")}
                         </span>
                         <div
                             style={{
                                 fontSize: 12,
                                 fontWeight: 500,
-                                color: t.text,
+                                color: colors.text,
                                 marginTop: 6,
                                 wordBreak: "break-all",
                                 fontFamily: "monospace",
@@ -364,17 +366,17 @@ export default function ConfirmSignModal({
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder={
                                 isNew
-                                    ? "设置密码（≥8位，含字母+数字）"
-                                    : "输入密码"
+                                    ? t("password.placeholder_set")
+                                    : t("password.placeholder_enter")
                             }
                             style={
                                 {
                                     width: "100%",
                                     height: 44,
                                     borderRadius: 10,
-                                    border: `2px solid ${t.pinBorder}`,
-                                    background: t.pinBox,
-                                    color: t.text,
+                                    border: `2px solid ${colors.pinBorder}`,
+                                    background: colors.pinBox,
+                                    color: colors.text,
                                     fontSize: 15,
                                     padding: "0 42px 0 14px",
                                     outline: "none",
@@ -396,7 +398,7 @@ export default function ConfirmSignModal({
                                 border: "none",
                                 cursor: "pointer",
                                 padding: 4,
-                                color: t.subtext,
+                                color: colors.subtext,
                                 display: "flex",
                                 alignItems: "center",
                             }}
@@ -448,15 +450,15 @@ export default function ConfirmSignModal({
                                 onChange={(e) =>
                                     setConfirmPassword(e.target.value)
                                 }
-                                placeholder="确认密码"
+                                placeholder={t("password.confirm_placeholder")}
                                 style={
                                     {
                                         width: "100%",
                                         height: 44,
                                         borderRadius: 10,
-                                        border: `2px solid ${t.pinBorder}`,
-                                        background: t.pinBox,
-                                        color: t.text,
+                                        border: `2px solid ${colors.pinBorder}`,
+                                        background: colors.pinBox,
+                                        color: colors.text,
                                         fontSize: 15,
                                         padding: "0 42px 0 14px",
                                         outline: "none",
@@ -478,7 +480,7 @@ export default function ConfirmSignModal({
                                     border: "none",
                                     cursor: "pointer",
                                     padding: 4,
-                                    color: t.subtext,
+                                    color: colors.subtext,
                                     display: "flex",
                                     alignItems: "center",
                                 }}
@@ -524,7 +526,7 @@ export default function ConfirmSignModal({
                 {error && (
                     <div
                         style={{
-                            color: t.errorText,
+                            color: colors.errorText,
                             fontSize: 12,
                             marginTop: 12,
                             textAlign: "center",
@@ -542,15 +544,15 @@ export default function ConfirmSignModal({
                         height: 44,
                         borderRadius: 10,
                         border: "none",
-                        background: t.btnPrimary,
-                        color: t.btnText,
+                        background: colors.btnPrimary,
+                        color: colors.btnText,
                         fontSize: 15,
                         fontWeight: 600,
                         cursor: "pointer",
                         marginTop: 8,
                     }}
                 >
-                    {isNew ? "设置并确认" : "确认签名"}
+                    {isNew ? t("sign.submit_set") : t("sign.submit_enter")}
                 </button>
                 <button
                     onClick={() => {
@@ -562,14 +564,14 @@ export default function ConfirmSignModal({
                         height: 40,
                         borderRadius: 8,
                         border: "none",
-                        background: t.btnGhost,
-                        color: t.subtext,
+                        background: colors.btnGhost,
+                        color: colors.subtext,
                         fontSize: 13,
                         cursor: "pointer",
                         marginTop: 8,
                     }}
                 >
-                    取消
+                    {t("sign.cancel")}
                 </button>
             </div>
         </div>,

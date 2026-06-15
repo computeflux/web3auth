@@ -7,6 +7,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { copyText } from "../core/clipboard";
+import { useTranslation } from "../core/i18n";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -301,7 +302,8 @@ export default function TopUpModal({
     nativeSymbol = "ETH",
     nativeName = "Ether",
 }: TopUpModalProps) {
-    const t = theme === "light" ? LIGHT : DARK;
+    const colors = theme === "light" ? LIGHT : DARK;
+    const { t } = useTranslation();
 
     const [step, setStep] = useState<"main" | "receive" | "transfer">("main");
     const [copied, setCopied] = useState(false);
@@ -368,7 +370,7 @@ export default function TopUpModal({
         position: "fixed",
         inset: 0,
         zIndex: 99999,
-        background: t.overlay,
+        background: colors.overlay,
         backdropFilter: "blur(10px)",
         display: "flex",
         alignItems: "center",
@@ -383,9 +385,9 @@ export default function TopUpModal({
         maxWidth: "calc(100% - 32px)",
         borderRadius: 18,
         padding: "28px 24px 24px",
-        background: t.cardBg,
-        color: t.text,
-        boxShadow: t.cardShadow,
+        background: colors.cardBg,
+        color: colors.text,
+        boxShadow: colors.cardShadow,
         position: "relative",
     };
 
@@ -398,7 +400,7 @@ export default function TopUpModal({
         borderRadius: "50%",
         border: "none",
         background: "transparent",
-        color: t.closeColor,
+        color: colors.closeColor,
         fontSize: 20,
         cursor: "pointer",
         display: "flex",
@@ -414,9 +416,9 @@ export default function TopUpModal({
         padding: "16px",
         borderRadius: 12,
         border: `1px solid ${
-            hoveredOption === key ? t.optionHoverBorder : t.optionBorder
+            hoveredOption === key ? colors.optionHoverBorder : colors.optionBorder
         }`,
-        background: hoveredOption === key ? t.optionHoverBg : t.optionBg,
+        background: hoveredOption === key ? colors.optionHoverBg : colors.optionBg,
         cursor: "pointer",
         transition: "background 0.15s, border-color 0.15s",
         marginBottom: 10,
@@ -426,8 +428,8 @@ export default function TopUpModal({
         width: 44,
         height: 44,
         borderRadius: "50%",
-        background: t.iconBg,
-        color: t.iconColor,
+        background: colors.iconBg,
+        color: colors.iconColor,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -439,7 +441,7 @@ export default function TopUpModal({
         height: 48,
         borderRadius: 10,
         border: "none",
-        background: t.btnPrimary,
+        background: colors.btnPrimary,
         color: "#ffffff",
         fontSize: 15,
         fontWeight: 600,
@@ -454,7 +456,7 @@ export default function TopUpModal({
         borderRadius: 8,
         border: "none",
         background: "transparent",
-        color: t.subtext,
+        color: colors.subtext,
         fontSize: 13,
         cursor: "pointer",
         marginTop: 8,
@@ -467,12 +469,12 @@ export default function TopUpModal({
         gap: 8,
         padding: "12px 16px",
         borderRadius: 10,
-        border: `1px solid ${t.optionBorder}`,
-        background: t.optionBg,
+        border: `1px solid ${colors.optionBorder}`,
+        background: colors.optionBg,
         fontSize: 13,
         fontFamily: "monospace",
         wordBreak: "break-all",
-        color: t.text,
+        color: colors.text,
         marginTop: 12,
     };
 
@@ -482,8 +484,8 @@ export default function TopUpModal({
         gap: 4,
         padding: "4px 10px",
         borderRadius: 999,
-        background: t.pillBg,
-        color: t.pillColor,
+        background: colors.pillBg,
+        color: colors.pillColor,
         fontSize: 12,
         fontWeight: 600,
     };
@@ -514,19 +516,19 @@ export default function TopUpModal({
                             style={{
                                 fontSize: 20,
                                 fontWeight: 600,
-                                color: t.text,
+                                color: colors.text,
                             }}
                         >
-                            Receive Crypto
+                            {t("topup.receive_title")}
                         </div>
                         <div
                             style={{
                                 fontSize: 13,
-                                color: t.subtext,
+                                color: colors.subtext,
                                 marginTop: 4,
                             }}
                         >
-                            Share your wallet address to receive funds
+                            {t("topup.receive_subtitle")}
                         </div>
                         {selectedToken && (
                             <div
@@ -537,8 +539,8 @@ export default function TopUpModal({
                                     marginTop: 10,
                                     padding: "5px 12px",
                                     borderRadius: 999,
-                                    background: t.pillBg,
-                                    color: t.pillColor,
+                                    background: colors.pillBg,
+                                    color: colors.pillColor,
                                     fontSize: 12,
                                     fontWeight: 600,
                                 }}
@@ -582,22 +584,22 @@ export default function TopUpModal({
                             gap: 10,
                             marginBottom: 12,
                             fontSize: 12,
-                            color: t.subtext,
+                            color: colors.subtext,
                         }}
                     >
                         <span
                             style={{
                                 flex: 1,
                                 height: 1,
-                                background: t.divider,
+                                background: colors.divider,
                             }}
                         />
-                        <span>or copy address</span>
+                        <span>{t("topup.or_copy_address")}</span>
                         <span
                             style={{
                                 flex: 1,
                                 height: 1,
-                                background: t.divider,
+                                background: colors.divider,
                             }}
                         />
                     </div>
@@ -612,7 +614,7 @@ export default function TopUpModal({
                                 whiteSpace: "nowrap",
                             }}
                         >
-                            {shortAddr || "No wallet connected"}
+                            {shortAddr || t("topup.no_wallet")}
                         </span>
                         <button
                             onClick={handleCopyAddress}
@@ -623,9 +625,9 @@ export default function TopUpModal({
                                 gap: 4,
                                 padding: "6px 10px",
                                 borderRadius: 6,
-                                border: `1px solid ${t.optionBorder}`,
-                                background: copied ? "#16a34a" : t.optionBg,
-                                color: copied ? "#ffffff" : t.text,
+                                border: `1px solid ${colors.optionBorder}`,
+                                background: copied ? "#16a34a" : colors.optionBg,
+                                color: copied ? "#ffffff" : colors.text,
                                 fontSize: 12,
                                 fontWeight: 500,
                                 cursor: addr ? "pointer" : "default",
@@ -633,12 +635,12 @@ export default function TopUpModal({
                             }}
                         >
                             {copied ? <CheckIcon /> : <CopyIcon />}
-                            {copied ? "Copied!" : "Copy"}
+                            {copied ? t("topup.copied") : t("topup.copy")}
                         </button>
                     </div>
 
                     <button style={ghostBtn} onClick={() => setStep("main")}>
-                        ← Back
+                        {t("login.back")}
                     </button>
                 </div>
             </div>,
@@ -670,20 +672,19 @@ export default function TopUpModal({
                             style={{
                                 fontSize: 20,
                                 fontWeight: 600,
-                                color: t.text,
+                                color: colors.text,
                             }}
                         >
-                            Transfer Crypto
+                            {t("topup.transfer_title")}
                         </div>
                         <div
                             style={{
                                 fontSize: 13,
-                                color: t.subtext,
+                                color: colors.subtext,
                                 marginTop: 4,
                             }}
                         >
-                            Link your exchange account to transfer funds for
-                            free
+                            {t("topup.transfer_subtitle")}
                         </div>
                     </div>
 
@@ -715,7 +716,7 @@ export default function TopUpModal({
                                 style={{
                                     fontSize: 15,
                                     fontWeight: 600,
-                                    color: t.text,
+                                    color: colors.text,
                                 }}
                             >
                                 Coinbase
@@ -723,14 +724,14 @@ export default function TopUpModal({
                             <div
                                 style={{
                                     fontSize: 12,
-                                    color: t.subtext,
+                                    color: colors.subtext,
                                     marginTop: 2,
                                 }}
                             >
-                                Link your Coinbase account to transfer funds
+                                {t("topup.coinbase_desc")}
                             </div>
                         </div>
-                        <div style={{ color: t.subtext }}>
+                        <div style={{ color: colors.subtext }}>
                             <svg
                                 width="16"
                                 height="16"
@@ -774,7 +775,7 @@ export default function TopUpModal({
                                 style={{
                                     fontSize: 15,
                                     fontWeight: 600,
-                                    color: t.text,
+                                    color: colors.text,
                                 }}
                             >
                                 Binance
@@ -782,14 +783,14 @@ export default function TopUpModal({
                             <div
                                 style={{
                                     fontSize: 12,
-                                    color: t.subtext,
+                                    color: colors.subtext,
                                     marginTop: 2,
                                 }}
                             >
-                                Link your Binance account to transfer funds
+                                {t("topup.binance_desc")}
                             </div>
                         </div>
-                        <div style={{ color: t.subtext }}>
+                        <div style={{ color: colors.subtext }}>
                             <svg
                                 width="16"
                                 height="16"
@@ -809,12 +810,11 @@ export default function TopUpModal({
                         style={{
                             textAlign: "center",
                             fontSize: 12,
-                            color: t.subtext,
+                            color: colors.subtext,
                             marginTop: 12,
                         }}
                     >
-                        Transferring from exchanges is often free or very low
-                        cost. You'll need to log in to your exchange account.
+                        {t("topup.transfer_note")}
                     </div>
 
                     <button style={ghostBtn} onClick={() => setStep("main")}>
@@ -847,14 +847,14 @@ export default function TopUpModal({
                 {/* Header */}
                 <div style={{ textAlign: "center", marginBottom: 20 }}>
                     <div
-                        style={{ fontSize: 20, fontWeight: 600, color: t.text }}
+                        style={{ fontSize: 20, fontWeight: 600, color: colors.text }}
                     >
-                        Charge
+                        {t("topup.title")}
                     </div>
                     <div
-                        style={{ fontSize: 13, color: t.subtext, marginTop: 4 }}
+                        style={{ fontSize: 13, color: colors.subtext, marginTop: 4 }}
                     >
-                        Choose how to charge your wallet
+                        {t("topup.subtitle")}
                     </div>
                 </div>
 
@@ -864,12 +864,12 @@ export default function TopUpModal({
                         style={{
                             display: "block",
                             fontSize: 12,
-                            color: t.subtext,
+                            color: colors.subtext,
                             marginBottom: 6,
                             fontWeight: 500,
                         }}
                     >
-                        {tokenList.length > 1 ? "选择货币" : "当前货币"}
+                        {tokenList.length > 1 ? t("topup.currency_label") : t("topup.currency_current")}
                     </label>
                     {tokenList.length > 1 ? (
                         <div style={{ position: "relative" }}>
@@ -886,9 +886,9 @@ export default function TopUpModal({
                                     height: 44,
                                     padding: "0 36px 0 14px",
                                     borderRadius: 10,
-                                    border: `1px solid ${t.optionBorder}`,
-                                    background: t.optionBg,
-                                    color: t.text,
+                                    border: `1px solid ${colors.optionBorder}`,
+                                    background: colors.optionBg,
+                                    color: colors.text,
                                     fontSize: 14,
                                     fontWeight: 600,
                                     appearance: "none",
@@ -910,7 +910,7 @@ export default function TopUpModal({
                                     top: "50%",
                                     transform: "translateY(-50%)",
                                     pointerEvents: "none",
-                                    color: t.subtext,
+                                    color: colors.subtext,
                                 }}
                             >
                                 <svg
@@ -936,9 +936,9 @@ export default function TopUpModal({
                                 height: 44,
                                 padding: "0 14px",
                                 borderRadius: 10,
-                                border: `1px solid ${t.optionBorder}`,
-                                background: t.optionBg,
-                                color: t.text,
+                                border: `1px solid ${colors.optionBorder}`,
+                                background: colors.optionBg,
+                                color: colors.text,
                                 fontSize: 14,
                                 fontWeight: 600,
                             }}
@@ -970,30 +970,30 @@ export default function TopUpModal({
                     onClick={() => onBuyCrypto?.()}
                 >
                     <div style={iconCircle}>
-                        <TokenMarketIcon color={t.iconColor} />
+                        <TokenMarketIcon color={colors.iconColor} />
                     </div>
                     <div style={{ flex: 1 }}>
                         <div
                             style={{
                                 fontSize: 15,
                                 fontWeight: 600,
-                                color: t.text,
+                                color: colors.text,
                             }}
                         >
-                            Token Market
+                            {t("topup.token_market")}
                         </div>
                         <div
                             style={{
                                 fontSize: 12,
-                                color: t.subtext,
+                                color: colors.subtext,
                                 marginTop: 2,
                             }}
                         >
-                            Buy with debit or credit card
+                            {t("topup.token_market_desc")}
                         </div>
                     </div>
-                    <div style={{ ...pill, fontSize: 11 }}>最快</div>
-                    <div style={{ color: t.subtext, marginLeft: 4 }}>
+                    <div style={{ ...pill, fontSize: 11 }}>{t("topup.badge_fast")}</div>
+                    <div style={{ color: colors.subtext, marginLeft: 4 }}>
                         <svg
                             width="16"
                             height="16"
@@ -1017,40 +1017,39 @@ export default function TopUpModal({
                     onClick={() => setStep("receive")}
                 >
                     <div style={iconCircle}>
-                        <ReceiveIcon color={t.iconColor} />
+                        <ReceiveIcon color={colors.iconColor} />
                     </div>
                     <div style={{ flex: 1 }}>
                         <div
                             style={{
                                 fontSize: 15,
                                 fontWeight: 600,
-                                color: t.text,
+                                color: colors.text,
                             }}
                         >
-                            Receive Crypto
+                            {t("topup.receive_crypto")}
                         </div>
                         <div
                             style={{
                                 fontSize: 12,
-                                color: t.subtext,
+                                color: colors.subtext,
                                 marginTop: 2,
                             }}
                         >
-                            Deposit from another account using wallet address or
-                            QR code
+                            {t("topup.receive_crypto_desc")}
                         </div>
                     </div>
                     <div
                         style={{
                             ...pill,
                             fontSize: 11,
-                            background: t.optionBg,
-                            color: t.subtext,
+                            background: colors.optionBg,
+                            color: colors.subtext,
                         }}
                     >
-                        免手续费
+                        {t("topup.badge_no_fee")}
                     </div>
-                    <div style={{ color: t.subtext, marginLeft: 4 }}>
+                    <div style={{ color: colors.subtext, marginLeft: 4 }}>
                         <svg
                             width="16"
                             height="16"
@@ -1074,40 +1073,39 @@ export default function TopUpModal({
                     onClick={() => setStep("transfer")}
                 >
                     <div style={iconCircle}>
-                        <TransferIcon color={t.iconColor} />
+                        <TransferIcon color={colors.iconColor} />
                     </div>
                     <div style={{ flex: 1 }}>
                         <div
                             style={{
                                 fontSize: 15,
                                 fontWeight: 600,
-                                color: t.text,
+                                color: colors.text,
                             }}
                         >
-                            Transfer Crypto
+                            {t("topup.transfer_crypto")}
                         </div>
                         <div
                             style={{
                                 fontSize: 12,
-                                color: t.subtext,
+                                color: colors.subtext,
                                 marginTop: 2,
                             }}
                         >
-                            Link your Coinbase or Binance account to transfer
-                            for free
+                            {t("topup.transfer_crypto_desc")}
                         </div>
                     </div>
                     <div
                         style={{
                             ...pill,
                             fontSize: 11,
-                            background: t.optionBg,
-                            color: t.subtext,
+                            background: colors.optionBg,
+                            color: colors.subtext,
                         }}
                     >
-                        免手续费
+                        {t("topup.badge_no_fee")}
                     </div>
-                    <div style={{ color: t.subtext, marginLeft: 4 }}>
+                    <div style={{ color: colors.subtext, marginLeft: 4 }}>
                         <svg
                             width="16"
                             height="16"
@@ -1128,15 +1126,14 @@ export default function TopUpModal({
                     style={{
                         textAlign: "center",
                         fontSize: 11,
-                        color: t.subtext,
+                        color: colors.subtext,
                         marginTop: 16,
                         lineHeight: 1.5,
                     }}
                 >
-                    Only send {selectedToken.symbol} to this address.
                     {selectedToken.isNative
-                        ? " Sending other assets may result in permanent loss."
-                        : " Make sure the sender uses the correct token contract. Sending other assets may result in permanent loss."}
+                        ? t("topup.warning")
+                        : t("topup.warning_token", { symbol: selectedToken.symbol })}
                 </div>
             </div>
         </div>,

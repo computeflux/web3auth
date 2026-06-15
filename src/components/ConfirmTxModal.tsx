@@ -12,6 +12,7 @@ import {
     computeResponse,
     computeResponseCached,
 } from "../core/txPassword";
+import { useTranslation, tStatic } from "../core/i18n";
 
 export type TxConfirmProps = {
     open: boolean;
@@ -78,7 +79,7 @@ async function fetchChallenge(backendUrl: string, token: string) {
     const json = await res.json();
     const result = json.data?.getChallenge;
     if (json.errors || !result || result.status !== "success") {
-        throw new Error(result?.error || "获取验证信息失败");
+        throw new Error(result?.error || tStatic("password.error_fetch_challenge"));
     }
     return {
         challenge: result.challenge as string,
@@ -105,7 +106,7 @@ async function fetchVerifyResponse(
     const json = await res.json();
     const result = json.data?.verifyResponse;
     if (json.errors || !result || result.status !== "ok") {
-        throw new Error(result?.error || "验证失败");
+        throw new Error(result?.error || tStatic("password.error_verify_failed"));
     }
     return result.signToken as string;
 }
@@ -138,7 +139,7 @@ async function fetchSetPassword(
         (result.status !== "success" && result.status !== "ok")
     ) {
         console.error("[web3auth] setPassword response:", json);
-        throw new Error(result?.error || "设置密码失败");
+        throw new Error(result?.error || tStatic("password.error_set_failed"));
     }
 }
 
@@ -154,7 +155,8 @@ export default function ConfirmTxModal({
     nativeSymbol,
     estimatedFee,
 }: TxConfirmProps) {
-    const t = theme === "light" ? LIGHT : DARK;
+    const colors = theme === "light" ? LIGHT : DARK;
+    const { t } = useTranslation();
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
@@ -176,7 +178,7 @@ export default function ConfirmTxModal({
                 if (err?.message === "password not set") {
                     setIsNew(true);
                 } else {
-                    setError(err?.message || "检测密码状态失败");
+                    setError(err?.message || t("password.error_check_failed"));
                 }
             })
             .finally(() => setChecking(false));
@@ -204,11 +206,11 @@ export default function ConfirmTxModal({
     const handleSubmit = useCallback(async () => {
         setError("");
         if (password.length < 8) {
-            setError("密码至少 8 位");
+            setError(t("password.error_min_length"));
             return;
         }
         if (!backendUrl || !token) {
-            setError("缺少后端配置");
+            setError(t("password.error_missing_backend"));
             return;
         }
 
@@ -218,16 +220,16 @@ export default function ConfirmTxModal({
             if (isNew) {
                 // ── 设置密码 ──
                 if (confirmPassword.length < 8) {
-                    setError("请确认密码");
+                    setError(t("password.error_confirm_required"));
                     return;
                 }
                 if (pwd !== confirmPassword) {
-                    setError("两次密码不一致");
+                    setError(t("password.error_mismatch"));
                     return;
                 }
                 const { ok, msg } = validatePassword(pwd);
                 if (!ok) {
-                    setError(msg || "密码不符合要求");
+                    setError(msg || t("password.error_invalid"));
                     return;
                 }
 
@@ -254,7 +256,7 @@ export default function ConfirmTxModal({
             } catch (err: any) {
                 if (err?.message === "password not set" && !isNew) {
                     setIsNew(true);
-                    setError("首次使用，请先设置交易密码");
+                    setError(t("password.error_first_use_tx"));
                     return;
                 }
                 throw err;
@@ -283,7 +285,7 @@ export default function ConfirmTxModal({
             setIsNew(false);
         } catch (err: any) {
             console.error("[web3auth] ConfirmTxModal handleSubmit error:", err);
-            setError(err?.message || "密码错误");
+            setError(err?.message || t("password.error_wrong"));
         }
     }, [password, confirmPassword, isNew, backendUrl, token, onConfirm]);
 
@@ -297,7 +299,7 @@ export default function ConfirmTxModal({
                 position: "fixed",
                 inset: 0,
                 zIndex: 100001,
-                background: t.overlay,
+                background: colors.overlay,
                 backdropFilter: "blur(10px)",
                 display: "flex",
                 alignItems: "center",
@@ -327,9 +329,9 @@ export default function ConfirmTxModal({
                     maxWidth: "calc(100% - 32px)",
                     borderRadius: 16,
                     padding: "28px 24px",
-                    background: t.cardBg,
-                    boxShadow: t.cardShadow,
-                    color: t.text,
+                    background: colors.cardBg,
+                    boxShadow: colors.cardShadow,
+                    color: colors.text,
                     outline: "none",
                 }}
             >
@@ -341,7 +343,7 @@ export default function ConfirmTxModal({
                         textAlign: "center",
                     }}
                 >
-                    {isNew ? "设置交易密码" : "输入交易密码"}
+                    {isNew ? t("tx.title_set") : t("tx.title_enter")}
                 </div>
 
                 {tx && (
@@ -350,8 +352,8 @@ export default function ConfirmTxModal({
                             marginBottom: 22,
                             padding: "14px 16px",
                             borderRadius: 12,
-                            background: t.pinBox,
-                            border: `1px solid ${t.pinBorder}`,
+                            background: colors.pinBox,
+                            border: `1px solid ${colors.pinBorder}`,
                         }}
                     >
                         {tx.amount && (
@@ -365,15 +367,15 @@ export default function ConfirmTxModal({
                                 }}
                             >
                                 <span
-                                    style={{ fontSize: 11, color: t.subtext }}
+                                    style={{ fontSize: 11, color: colors.subtext }}
                                 >
-                                    发送金额
+                                    {t("tx.amount_label")}
                                 </span>
                                 <div
                                     style={{
                                         fontSize: 20,
                                         fontWeight: 800,
-                                        color: t.text,
+                                        color: colors.text,
                                     }}
                                 >
                                     {tx.amount}{" "}
@@ -381,7 +383,7 @@ export default function ConfirmTxModal({
                                         style={{
                                             fontSize: 14,
                                             fontWeight: 600,
-                                            color: t.subtext,
+                                            color: colors.subtext,
                                         }}
                                     >
                                         {nativeSymbol || ""}
@@ -392,22 +394,22 @@ export default function ConfirmTxModal({
                         {(tx.to || (tx.data && tx.data !== "0x")) && (
                             <div
                                 style={{
-                                    borderTop: `1px solid ${t.pinBorder}`,
+                                    borderTop: `1px solid ${colors.pinBorder}`,
                                     paddingTop: 8,
                                     fontSize: 12,
-                                    color: t.subtext,
+                                    color: colors.subtext,
                                     lineHeight: 1.7,
                                     textAlign: "center",
                                 }}
                             >
                                 {tx.to && (
                                     <div>
-                                        收款方 {tx.to.slice(0, 10)}...
+                                        {t("tx.recipient_label")} {tx.to.slice(0, 10)}...
                                         {tx.to.slice(-6)}
                                     </div>
                                 )}
                                 {tx.data && tx.data !== "0x" && (
-                                    <div>类型 合约调用</div>
+                                    <div>{t("tx.contract_call_label")}</div>
                                 )}
                             </div>
                         )}
@@ -433,17 +435,17 @@ export default function ConfirmTxModal({
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder={
                                 isNew
-                                    ? "设置密码（≥8位，含字母+数字）"
-                                    : "输入密码"
+                                    ? t("password.placeholder_set")
+                                    : t("password.placeholder_enter")
                             }
                             style={
                                 {
                                     width: "100%",
                                     height: 44,
                                     borderRadius: 10,
-                                    border: `2px solid ${t.pinBorder}`,
-                                    background: t.pinBox,
-                                    color: t.text,
+                                    border: `2px solid ${colors.pinBorder}`,
+                                    background: colors.pinBox,
+                                    color: colors.text,
                                     fontSize: 15,
                                     padding: "0 42px 0 14px",
                                     outline: "none",
@@ -465,7 +467,7 @@ export default function ConfirmTxModal({
                                 border: "none",
                                 cursor: "pointer",
                                 padding: 4,
-                                color: t.subtext,
+                                color: colors.subtext,
                                 display: "flex",
                                 alignItems: "center",
                             }}
@@ -517,15 +519,15 @@ export default function ConfirmTxModal({
                                 onChange={(e) =>
                                     setConfirmPassword(e.target.value)
                                 }
-                                placeholder="确认密码"
+                                placeholder={t("password.confirm_placeholder")}
                                 style={
                                     {
                                         width: "100%",
                                         height: 44,
                                         borderRadius: 10,
-                                        border: `2px solid ${t.pinBorder}`,
-                                        background: t.pinBox,
-                                        color: t.text,
+                                        border: `2px solid ${colors.pinBorder}`,
+                                        background: colors.pinBox,
+                                        color: colors.text,
                                         fontSize: 15,
                                         padding: "0 42px 0 14px",
                                         outline: "none",
@@ -547,7 +549,7 @@ export default function ConfirmTxModal({
                                     border: "none",
                                     cursor: "pointer",
                                     padding: 4,
-                                    color: t.subtext,
+                                    color: colors.subtext,
                                     display: "flex",
                                     alignItems: "center",
                                 }}
@@ -594,19 +596,19 @@ export default function ConfirmTxModal({
                     <div
                         style={{
                             fontSize: 12,
-                            color: t.subtext,
+                            color: colors.subtext,
                             marginTop: 14,
                             textAlign: "center",
                         }}
                     >
-                        网络费 {estimatedFee}
+                        {t("tx.network_fee")} {estimatedFee}
                     </div>
                 )}
 
                 {error && (
                     <div
                         style={{
-                            color: t.errorText,
+                            color: colors.errorText,
                             fontSize: 12,
                             marginTop: 12,
                             textAlign: "center",
@@ -624,15 +626,15 @@ export default function ConfirmTxModal({
                         height: 44,
                         borderRadius: 10,
                         border: "none",
-                        background: t.btnPrimary,
-                        color: t.btnText,
+                        background: colors.btnPrimary,
+                        color: colors.btnText,
                         fontSize: 15,
                         fontWeight: 600,
                         cursor: "pointer",
                         marginTop: 8,
                     }}
                 >
-                    {isNew ? "设置并确认" : "确认交易"}
+                    {isNew ? t("tx.submit_set") : t("tx.submit_enter")}
                 </button>
                 <button
                     onClick={() => {
@@ -644,14 +646,14 @@ export default function ConfirmTxModal({
                         height: 40,
                         borderRadius: 8,
                         border: "none",
-                        background: t.btnGhost,
-                        color: t.subtext,
+                        background: colors.btnGhost,
+                        color: colors.subtext,
                         fontSize: 13,
                         cursor: "pointer",
                         marginTop: 8,
                     }}
                 >
-                    取消
+                    {t("tx.cancel")}
                 </button>
             </div>
         </div>,
