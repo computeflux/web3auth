@@ -986,7 +986,11 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                     {estimatedSendFee != null && (
                                         <span>
                                             {" "}
-                                            {" · "}{t("wallet.network_fee_approx")} {estimatedSendFee}{" "}
+                                            {" · "}
+                                            {t(
+                                                "wallet.network_fee_approx",
+                                            )}{" "}
+                                            {estimatedSendFee}{" "}
                                             {chainMeta.ticker}
                                         </span>
                                     )}
@@ -1085,7 +1089,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                             marginBottom: 8,
                                         }}
                                     >
-                                        {t("wallet.estimated_gas_fee")}: {" "}
+                                        {t("wallet.estimated_gas_fee")}:{" "}
                                         {estimatedSendFee != null
                                             ? `~${estimatedSendFee.toFixed(6)} ${chainMeta.ticker}`
                                             : t("wallet.calculating")}
@@ -1231,7 +1235,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                 letterSpacing: -1.5,
                             }}
                         >
-                            0{" "}
+                            {balanceEth}{" "}
                             <span
                                 style={{
                                     fontSize: 17,
@@ -1239,7 +1243,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                     color: theme.subtext,
                                 }}
                             >
-                                USD
+                                {chainMeta.ticker}
                             </span>
                         </div>
                     </div>
