@@ -699,6 +699,7 @@ export function Web3AuthProvider({
                     result.userInfo,
                     result.token,
                     result.address,
+                    result.refreshToken,
                 );
 
                 const wallet = new RemoteWalletEngine({
@@ -744,6 +745,7 @@ export function Web3AuthProvider({
                     result.userInfo,
                     result.token,
                     result.address,
+                    result.refreshToken,
                 );
 
                 const wallet = new RemoteWalletEngine({
@@ -954,7 +956,7 @@ export function Web3AuthProvider({
                             params: [loginMsg + nonce, a],
                         })) as string;
 
-                        const loginQuery = `mutation($address:String!,$signature:String!,$message:String!,$nonce:String!){loginWithWallet(address:$address,signature:$signature,message:$message,nonce:$nonce){success token address error}}`;
+                        const loginQuery = `mutation($address:String!,$signature:String!,$message:String!,$nonce:String!){loginWithWallet(address:$address,signature:$signature,message:$message,nonce:$nonce){success token refreshToken address error}}`;
                         const loginRes = await fetch(`${authBackendUrl}/gql`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -975,6 +977,7 @@ export function Web3AuthProvider({
                                 "web3auth:session",
                                 JSON.stringify({
                                     token: data.token,
+                                    refreshToken: data.refreshToken,
                                     address: data.address || a,
                                 }),
                             );
@@ -1093,7 +1096,7 @@ export function Web3AuthProvider({
                         params: [loginMsg + nonce, a],
                     })) as string;
 
-                    const loginQuery = `mutation($address:String!,$signature:String!,$message:String!,$nonce:String!){loginWithWallet(address:$address,signature:$signature,message:$message,nonce:$nonce){success token address error}}`;
+                    const loginQuery = `mutation($address:String!,$signature:String!,$message:String!,$nonce:String!){loginWithWallet(address:$address,signature:$signature,message:$message,nonce:$nonce){success token refreshToken address error}}`;
                     const loginRes = await fetch(`${authBackendUrl}/gql`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -1114,6 +1117,7 @@ export function Web3AuthProvider({
                             "web3auth:session",
                             JSON.stringify({
                                 token: data.token,
+                                refreshToken: data.refreshToken,
                                 address: data.address || a,
                             }),
                         );
