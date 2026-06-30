@@ -12,28 +12,24 @@ export function showTxNotification(
         status === "success"
             ? "区块链交易已确认"
             : status === "failure"
-            ? "区块链交易失败"
-            : "区块链交易已提交";
+              ? "区块链交易失败"
+              : "区块链交易已提交";
     const subtext =
         status === "pending"
             ? "等待链上确认"
             : status === "failure"
-            ? "请稍后检查交易状态"
-            : displayHash;
+              ? "请稍后检查交易状态"
+              : displayHash;
     const iconGradient =
         status === "success"
             ? "linear-gradient(135deg,#22c55e,#16a34a)"
             : status === "failure"
-            ? "linear-gradient(135deg,#ef4444,#dc2626)"
-            : "linear-gradient(135deg,#f59e0b,#d97706)";
+              ? "linear-gradient(135deg,#ef4444,#dc2626)"
+              : "linear-gradient(135deg,#f59e0b,#d97706)";
 
     const isDark = theme === "dark";
-    const bg = isDark
-        ? "rgba(0, 0, 0, 0.92)"
-        : "rgba(255,255,255,0.92)";
-    const borderColor = isDark
-        ? "rgba(255,255,255,0.08)"
-        : "rgba(0,0,0,0.08)";
+    const bg = isDark ? "rgba(0, 0, 0, 0.92)" : "rgba(255,255,255,0.92)";
+    const borderColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
     const titleColor = isDark ? "#f1f5f9" : "#676767";
     const subtextColor = isDark ? "#94a3b8" : "#9c9d9d";
 
@@ -62,7 +58,8 @@ export function showTxNotification(
             background:${bg};
             backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
             border:1px solid ${borderColor};
-            border-radius:16px;padding:16px 20px;
+            border-radius:16px;
+            padding:11px;
             display:flex;align-items:center;gap:16px;
             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
             max-width:calc(100vw - 40px);
@@ -83,7 +80,7 @@ export function showTxNotification(
                 <div style="font-size:14px;font-weight:600;color:${titleColor};letter-spacing:0.01em;">
                     ${title}
                 </div>
-                <div style="font-size:12px;color:${subtextColor};font-family:'SF Mono',ui-monospace,monospace;margin-top:3px;word-break:break-all;">
+                <div style="font-size:12px;color:${subtextColor};font-family:'SF Mono',ui-monospace,monospace;margin-top:3px;">
                     ${subtext}
                 </div>
             </div>

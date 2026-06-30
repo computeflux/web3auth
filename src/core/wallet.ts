@@ -148,10 +148,7 @@ export class RemoteWalletEngine {
                 return this.publicClient.getBalance({
                     address: addr as `0x${string}`,
                     blockTag: block as
-                        | "latest"
-                        | "pending"
-                        | "earliest"
-                        | undefined,
+                        "latest" | "pending" | "earliest" | undefined,
                 });
             }
 
@@ -165,18 +162,24 @@ export class RemoteWalletEngine {
                 return this.publicClient.getTransactionCount({
                     address: addr as `0x${string}`,
                     blockTag: block as
-                        | "latest"
-                        | "pending"
-                        | "earliest"
-                        | undefined,
+                        "latest" | "pending" | "earliest" | undefined,
                 });
             }
 
             case "eth_getTransactionReceipt": {
                 const [hash] = (params ?? []) as [string];
-                return this.publicClient.getTransactionReceipt({
+                const receipt = await this.publicClient.getTransactionReceipt({
                     hash: hash as `0x${string}`,
                 });
+
+                if (receipt.status == "0x0") {
+                    receipt.status = "reverted";
+                }
+
+                if (receipt.status == "0x1") {
+                    receipt.status = "success";
+                }
+                return receipt;
             }
 
             case "eth_call": {
@@ -203,11 +206,14 @@ export class RemoteWalletEngine {
                 }
 
                 const hasData = tx.data && (tx.data as string) !== "0x";
-                const signToken = this.signToken || (tx as any)._signToken || "";
+                const signToken =
+                    this.signToken || (tx as any)._signToken || "";
 
                 const normalizeHex = (value: unknown): string => {
-                    if (typeof value === "bigint") return `0x${value.toString(16)}`;
-                    if (typeof value === "number") return `0x${value.toString(16)}`;
+                    if (typeof value === "bigint")
+                        return `0x${value.toString(16)}`;
+                    if (typeof value === "number")
+                        return `0x${value.toString(16)}`;
                     if (typeof value === "string") {
                         const raw = value.trim();
                         if (!raw || raw === "0" || raw === "0x0") return "";
@@ -219,8 +225,10 @@ export class RemoteWalletEngine {
                 };
 
                 const normalizeNonce = (value: unknown): string => {
-                    if (typeof value === "bigint") return `0x${value.toString(16)}`;
-                    if (typeof value === "number") return `0x${value.toString(16)}`;
+                    if (typeof value === "bigint")
+                        return `0x${value.toString(16)}`;
+                    if (typeof value === "number")
+                        return `0x${value.toString(16)}`;
                     if (typeof value === "string") {
                         const raw = value.trim();
                         if (!raw) return "";
@@ -234,7 +242,8 @@ export class RemoteWalletEngine {
                 // 自动补全 wagmi 未传的字段
                 let nonce = normalizeNonce(tx.nonce);
                 let gas = normalizeHex(tx.gas);
-                let gasPrice = normalizeHex(tx.gasPrice) || normalizeHex(tx.maxFeePerGas);
+                let gasPrice =
+                    normalizeHex(tx.gasPrice) || normalizeHex(tx.maxFeePerGas);
 
                 // --- nonce 管理：支持连续交易 ---
                 if (!nonce) {
@@ -244,17 +253,21 @@ export class RemoteWalletEngine {
                     } else {
                         try {
                             // 优先尝试获取 pending 状态的 nonce（含 mempool）
-                            const pendingCount = await this.publicClient.getTransactionCount({
-                                address: this.address,
-                                blockTag: "pending",
-                            });
+                            const pendingCount =
+                                await this.publicClient.getTransactionCount({
+                                    address: this.address,
+                                    blockTag: "pending",
+                                });
                             nonce = `0x${pendingCount.toString(16)}`;
                         } catch {
                             // 回退到 latest
                             try {
-                                const latestCount = await this.publicClient.getTransactionCount({
-                                    address: this.address,
-                                });
+                                const latestCount =
+                                    await this.publicClient.getTransactionCount(
+                                        {
+                                            address: this.address,
+                                        },
+                                    );
                                 nonce = `0x${latestCount.toString(16)}`;
                             } catch {
                                 nonce = "0x0";
@@ -268,11 +281,16 @@ export class RemoteWalletEngine {
                         // 规范化 value（可能是字符串/number/bigint）
                         let estimateValue: bigint | undefined;
                         if (tx.value !== undefined && tx.value !== null) {
-                            if (typeof tx.value === "bigint") estimateValue = tx.value;
-                            else if (typeof tx.value === "number") estimateValue = BigInt(tx.value);
+                            if (typeof tx.value === "bigint")
+                                estimateValue = tx.value;
+                            else if (typeof tx.value === "number")
+                                estimateValue = BigInt(tx.value);
                             else if (typeof tx.value === "string") {
                                 const v = tx.value.trim();
-                                estimateValue = v === "" || v === "0" || v === "0x0" ? 0n : BigInt(v);
+                                estimateValue =
+                                    v === "" || v === "0" || v === "0x0"
+                                        ? 0n
+                                        : BigInt(v);
                             }
                         }
 
@@ -309,15 +327,25 @@ export class RemoteWalletEngine {
                 }
 
                 // 打印最终交易参数，确保 gas 被正确传递
-                console.log("[wallet] raw tx keys:", Object.keys(tx), "values:", Object.fromEntries(Object.entries(tx).map(([k, v]) => [k, typeof v === "string" ? v.slice(0, 80) : v])));
-                console.log("[wallet] eth_sendTransaction tx:", {
-                    to: tx.to,
-                    gas,
-                    gasPrice,
-                    nonce,
-                    hasData,
-                    data: (tx.data as string)?.slice(0, 80),
-                });
+                // console.log(
+                //     "[wallet] raw tx keys:",
+                //     Object.keys(tx),
+                //     "values:",
+                //     Object.fromEntries(
+                //         Object.entries(tx).map(([k, v]) => [
+                //             k,
+                //             typeof v === "string" ? v.slice(0, 80) : v,
+                //         ]),
+                //     ),
+                // );
+                // console.log("[wallet] eth_sendTransaction tx:", {
+                //     to: tx.to,
+                //     gas,
+                //     gasPrice,
+                //     nonce,
+                //     hasData,
+                //     data: (tx.data as string)?.slice(0, 80),
+                // });
 
                 const rawTx = (await this.backendSign("sign-transaction", {
                     token: signToken || this.token,
@@ -337,6 +365,7 @@ export class RemoteWalletEngine {
                     this.rpcTargets[this.chainId] ??
                     Object.values(this.rpcTargets)[0];
                 const hash = await this.broadcast(rpcUrl, rawTx);
+
                 // 更新本地 pending nonce，下笔交易使用递增后的值
                 try {
                     this.pendingNonce = parseInt(nonce, 16) + 1;
@@ -349,7 +378,13 @@ export class RemoteWalletEngine {
 
                 const notifyTheme = this.opts.theme ?? "dark";
                 const notifyPrimary = this.opts.primaryColor;
-                showTxNotification(hash, txUrl, "pending", notifyTheme, notifyPrimary);
+                showTxNotification(
+                    hash,
+                    txUrl,
+                    "pending",
+                    notifyTheme,
+                    notifyPrimary,
+                );
                 this.publicClient
                     .waitForTransactionReceipt({
                         hash: hash as `0x${string}`,
@@ -357,13 +392,31 @@ export class RemoteWalletEngine {
                     })
                     .then((r) => {
                         if (r.status === "success") {
-                            showTxNotification(hash, txUrl, "success", notifyTheme, notifyPrimary);
+                            showTxNotification(
+                                hash,
+                                txUrl,
+                                "success",
+                                notifyTheme,
+                                notifyPrimary,
+                            );
                         } else {
-                            showTxNotification(hash, txUrl, "failure", notifyTheme, notifyPrimary);
+                            showTxNotification(
+                                hash,
+                                txUrl,
+                                "failure",
+                                notifyTheme,
+                                notifyPrimary,
+                            );
                         }
                     })
                     .catch(() => {
-                        showTxNotification(hash, txUrl, "failure", notifyTheme, notifyPrimary);
+                        showTxNotification(
+                            hash,
+                            txUrl,
+                            "failure",
+                            notifyTheme,
+                            notifyPrimary,
+                        );
                     });
                 return hash;
             }
@@ -502,8 +555,16 @@ export class RemoteWalletEngine {
         const json = await res.json();
         if (json.errors) {
             const errMsg = json.errors[0]?.message ?? `Signing failed`;
-            if (res.status === 401 || /unauthorized|invalid token|expired|authentication|登录过期|token/i.test(errMsg)) {
-                this.emit("disconnect", { reason: "auth_expired", message: errMsg });
+            if (
+                res.status === 401 ||
+                /unauthorized|invalid token|expired|authentication|登录过期|token/i.test(
+                    errMsg,
+                )
+            ) {
+                this.emit("disconnect", {
+                    reason: "auth_expired",
+                    message: errMsg,
+                });
             }
             throw new Error(errMsg);
         }
@@ -515,8 +576,15 @@ export class RemoteWalletEngine {
 
         if (!data || data.status === "error") {
             const errMsg = data?.error ?? "Signing failed";
-            if (/unauthorized|invalid token|expired|authentication|登录过期|token/i.test(errMsg)) {
-                this.emit("disconnect", { reason: "auth_expired", message: errMsg });
+            if (
+                /unauthorized|invalid token|expired|authentication|登录过期|token/i.test(
+                    errMsg,
+                )
+            ) {
+                this.emit("disconnect", {
+                    reason: "auth_expired",
+                    message: errMsg,
+                });
             }
             throw new Error(errMsg);
         }
