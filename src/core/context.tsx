@@ -57,6 +57,11 @@ type InjectedProviderLike = IEIP1193Provider & {
     isImToken?: boolean;
     isMathWallet?: boolean;
     isSafe?: boolean;
+    isSubWallet?: boolean;
+    isSubwallet?: boolean;
+    isTalisman?: boolean;
+    __walletName?: string;
+    name?: string;
     providerMap?: Record<string, boolean>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [k: string]: any;
@@ -75,15 +80,37 @@ type WalletKey =
     | "ledger"
     | "imtoken"
     | "mathwallet"
+    | "subwallet"
+    | "talisman"
     | "walletconnect";
 
 function getInjectedCandidates(): InjectedProviderLike[] {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const candidates: InjectedProviderLike[] = [];
     const eth = (globalThis as any)?.ethereum as
-        | InjectedProviderLike
-        | undefined;
-    if (!eth) return [];
-    return Array.isArray(eth.providers) ? eth.providers : [eth];
+        InjectedProviderLike | undefined;
+    if (eth) {
+        candidates.push(
+            ...(Array.isArray(eth.providers) ? eth.providers : [eth]),
+        );
+    }
+
+    // SubWallet 在非默认钱包时可能不会出现在 window.ethereum.providers 中，
+    // 但它常以 window.subWallet 单独暴露 EVM provider。
+    const subWallet = (window as any).SubWallet as
+        InjectedProviderLike | undefined;
+    if (subWallet) {
+        candidates.push(subWallet);
+    }
+
+    // Talisman 的 EVM provider 常以 window.talismanEth 单独暴露
+    const talismanEth = (window as any).talismanEth as
+        InjectedProviderLike | undefined;
+    if (talismanEth) {
+        candidates.push(talismanEth);
+    }
+
+    return candidates;
 }
 
 function detectInjectedWallets(): Partial<Record<WalletKey, boolean>> {
@@ -111,6 +138,24 @@ function detectInjectedWallets(): Partial<Record<WalletKey, boolean>> {
         trust: has((p) => p?.isTrust === true),
         imtoken: has((p) => p?.isImToken === true),
         mathwallet: has((p) => p?.isMathWallet === true),
+        subwallet:
+            has(
+                (p) =>
+                    p?.isSubWallet === true ||
+                    p?.isSubwallet === true ||
+                    p?.__walletName === "SubWallet" ||
+                    p?.name === "SubWallet" ||
+                    p === (globalThis as any)?.subWallet,
+            ) || Boolean((globalThis as any)?.injectedWeb3?.subwallet),
+        talisman:
+            has(
+                (p) =>
+                    p?.isTalisman === true ||
+                    p?.__walletName === "Talisman" ||
+                    p?.name === "Talisman" ||
+                    p === (window as any)?.talismanEth,
+            ) ||
+            Boolean((window as any)?.talisman || (window as any)?.talismanEth),
         safe: has((p) => p?.isSafe === true),
     };
 }
@@ -280,7 +325,7 @@ export function Web3AuthProvider({
             setAddress(wallet.addr);
             setChainId(wallet.chain);
             setIsConnected(true);
-            setConnectorName("auth");
+            setConnectorName(session.userInfo?.typeOfLogin || "auth");
             return;
         }
         if (session) {
@@ -289,7 +334,7 @@ export function Web3AuthProvider({
             setAddress(session.address);
             setChainId(_defaultChainId);
             setIsConnected(true);
-            setConnectorName("auth");
+            setConnectorName(session.userInfo?.typeOfLogin || "auth");
             return;
         }
 
@@ -366,8 +411,7 @@ export function Web3AuthProvider({
 
             // Injected wallet: re-attach provider if still available
             const eth = (globalThis as any)?.ethereum as
-                | InjectedProviderLike
-                | undefined;
+                InjectedProviderLike | undefined;
             if (!eth) {
                 localStorage.removeItem("web3auth:wallet_session");
                 return;
@@ -789,19 +833,14 @@ export function Web3AuthProvider({
                 | "trust"
                 | "imtoken"
                 | "mathwallet"
+                | "subwallet"
+                | "talisman"
                 | "safe"
                 | "injected",
         ) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const eth = (globalThis as any)?.ethereum as
-                | InjectedProviderLike
-                | undefined;
-            if (!eth)
+            const candidates = getInjectedCandidates();
+            if (candidates.length === 0)
                 return { success: false, error: "No injected wallet found" };
-
-            const candidates = Array.isArray(eth.providers)
-                ? eth.providers
-                : [eth];
 
             let picked: InjectedProviderLike | undefined;
             if (wallet === "metamask") {
@@ -825,6 +864,23 @@ export function Web3AuthProvider({
                 picked = candidates.find((p) => p?.isImToken);
             } else if (wallet === "mathwallet") {
                 picked = candidates.find((p) => p?.isMathWallet);
+            } else if (wallet === "subwallet") {
+                picked = candidates.find(
+                    (p) =>
+                        p?.isSubWallet === true ||
+                        p?.isSubwallet === true ||
+                        p?.__walletName === "SubWallet" ||
+                        p?.name === "SubWallet" ||
+                        p === (globalThis as any)?.subWallet,
+                );
+            } else if (wallet === "talisman") {
+                picked = candidates.find(
+                    (p) =>
+                        p?.isTalisman === true ||
+                        p?.__walletName === "Talisman" ||
+                        p?.name === "Talisman" ||
+                        p === (window as any)?.talismanEth,
+                );
             } else if (wallet === "safe") {
                 picked = candidates.find((p) => p?.isSafe);
             } else {
@@ -1435,6 +1491,10 @@ export function Web3AuthProvider({
                                 return await connectInjectedWallet(
                                     "mathwallet",
                                 );
+                            if (w.includes("subwallet"))
+                                return await connectInjectedWallet("subwallet");
+                            if (w.includes("talisman"))
+                                return await connectInjectedWallet("talisman");
                             if (w.includes("safe")) {
                                 const injected =
                                     await connectInjectedWallet("safe");

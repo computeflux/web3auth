@@ -35,6 +35,8 @@ export const ko: Dict = {
 
     // -- Password (shared by sign / tx modals) --
     "password.error_min_length": "비밀번호는 8자 이상이어야 합니다",
+    "password.error_missing_letter": "영문을 포함해야 합니다",
+    "password.error_missing_digit": "숫자를 포함해야 합니다",
     "password.error_missing_backend": "백엔드 설정이 없습니다",
     "password.error_confirm_required": "비밀번호를 확인해 주세요",
     "password.error_mismatch": "비밀번호가 일치하지 않습니다",
@@ -126,4 +128,12 @@ export const ko: Dict = {
     "wallet.estimated_gas_fee": "예상 가스 수수료",
     "wallet.calculating": "계산 중…",
     "wallet.gas_multiplier": "배수",
+
+    // -- TxNotification --
+    "txnotify.title.success": "블록체인 거래가 확인되었습니다",
+    "txnotify.title.failure": "블록체인 거래 실패",
+    "txnotify.title.pending": "블록체인 거래가 제출되었습니다",
+    "txnotify.subtext.pending": "온체인 확인 대기 중",
+    "txnotify.subtext.failure": "나중에 거래 상태를 확인해 주세요",
+    "txnotify.view": "보기",
 };

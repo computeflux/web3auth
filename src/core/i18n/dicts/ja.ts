@@ -35,6 +35,8 @@ export const ja: Dict = {
 
     // -- Password (shared by sign / tx modals) --
     "password.error_min_length": "パスワードは8文字以上である必要があります",
+    "password.error_missing_letter": "英字を含める必要があります",
+    "password.error_missing_digit": "数字を含める必要があります",
     "password.error_missing_backend": "バックエンド設定がありません",
     "password.error_confirm_required": "パスワードを確認してください",
     "password.error_mismatch": "パスワードが一致しません",
@@ -126,4 +128,12 @@ export const ja: Dict = {
     "wallet.estimated_gas_fee": "推定ガス手数料",
     "wallet.calculating": "計算中…",
     "wallet.gas_multiplier": "倍率",
+
+    // -- TxNotification --
+    "txnotify.title.success": "ブロックチェーン取引が確認されました",
+    "txnotify.title.failure": "ブロックチェーン取引に失敗しました",
+    "txnotify.title.pending": "ブロックチェーン取引を送信しました",
+    "txnotify.subtext.pending": "オンチェーン確認を待っています",
+    "txnotify.subtext.failure": "後で取引状況を確認してください",
+    "txnotify.view": "表示",
 };

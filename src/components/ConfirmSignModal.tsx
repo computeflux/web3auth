@@ -215,7 +215,7 @@ export default function ConfirmSignModal({
                 }
                 const { ok, msg } = validatePassword(pwd);
                 if (!ok) {
-                    setError(msg || t("password.error_invalid"));
+                    setError(msg ? t(msg) : t("password.error_invalid"));
                     return;
                 }
 

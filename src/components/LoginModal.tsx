@@ -163,6 +163,14 @@ const LOCAL_ICON = {
         "../assets/wallet-icons/login-coinbase.webp",
         import.meta.url,
     ).toString(),
+    subwallet: new URL(
+        "../assets/wallet-icons/subwallet.svg",
+        import.meta.url,
+    ).toString(),
+    talisman: new URL(
+        "../assets/wallet-icons/talisman.svg",
+        import.meta.url,
+    ).toString(),
 } as const;
 
 const WALLET_ICON_URI: Record<string, string> = {
@@ -186,6 +194,8 @@ const WALLET_ICON_URI: Record<string, string> = {
     walletconnect: svgToDataUri(
         `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#3b99fc"/><path d="M9.2 10.2a4 4 0 0 1 5.6 0l.3.3 1.1-1.1-.3-.3a5.6 5.6 0 0 0-7.8 0l-.3.3 1.1 1.1.3-.3zm-.8 2.4 1.1-1.1 2.5 2.5 2.5-2.5 1.1 1.1-3.6 3.6-3.6-3.6z" fill="#fff"/></svg>`,
     ),
+    subwallet: LOCAL_ICON.subwallet,
+    talisman: LOCAL_ICON.talisman,
 };
 
 export function LoginModal({
@@ -383,11 +393,23 @@ export function LoginModal({
                 kind: "injected",
             },
             {
-                key: "walletconnect",
-                label: "WalletConnect",
-                iconKey: "walletconnect",
-                kind: "walletconnect",
+                key: "subwallet",
+                label: "SubWallet",
+                iconKey: "subwallet",
+                kind: "injected",
             },
+            {
+                key: "talisman",
+                label: "Talisman",
+                iconKey: "talisman",
+                kind: "injected",
+            },
+            // {
+            //     key: "walletconnect",
+            //     label: "WalletConnect",
+            //     iconKey: "walletconnect",
+            //     kind: "walletconnect",
+            // },
             {
                 key: "rabby",
                 label: "Rabby",
@@ -418,13 +440,13 @@ export function LoginModal({
                 iconKey: "trust",
                 kind: "injected",
             },
-            { key: "safe", label: "Safe", iconKey: "safe", kind: "hybrid" },
-            {
-                key: "ledger",
-                label: "Ledger",
-                iconKey: "ledger",
-                kind: "walletconnect",
-            },
+            // { key: "safe", label: "Safe", iconKey: "safe", kind: "hybrid" },
+            // {
+            //     key: "ledger",
+            //     label: "Ledger",
+            //     iconKey: "ledger",
+            //     kind: "walletconnect",
+            // },
             {
                 key: "imtoken",
                 label: "imToken",
@@ -446,6 +468,8 @@ export function LoginModal({
         "coinbase",
         "walletconnect",
         "trust",
+        "subwallet",
+        "talisman",
     ];
     const allWalletsCount = allWalletItems.length;
 
@@ -520,7 +544,7 @@ export function LoginModal({
                         aria-hidden="true"
                         width={22}
                         height={22}
-                        style={{ display: "block" }}
+                        style={{ display: "block", borderRadius: "5px" }}
                     />
                     <span
                         style={{
@@ -716,7 +740,12 @@ export function LoginModal({
                                         key={provider}
                                         type="button"
                                         disabled={isLoading}
-                                        onClick={() => handleSocial(provider, `${window.location.origin}/oauth/callback.html`)}
+                                        onClick={() =>
+                                            handleSocial(
+                                                provider,
+                                                `${window.location.origin}/oauth/callback.html`,
+                                            )
+                                        }
                                         onMouseEnter={() =>
                                             setHoveredSocial(provider)
                                         }

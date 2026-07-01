@@ -35,6 +35,8 @@ export const de: Dict = {
 
     // -- Password (shared by sign / tx modals) --
     "password.error_min_length": "Passwort muss mindestens 8 Zeichen lang sein",
+    "password.error_missing_letter": "Passwort muss einen Buchstaben enthalten",
+    "password.error_missing_digit": "Passwort muss eine Ziffer enthalten",
     "password.error_missing_backend": "Backend-Konfiguration fehlt",
     "password.error_confirm_required": "Bitte bestätigen Sie das Passwort",
     "password.error_mismatch": "Passwörter stimmen nicht überein",
@@ -127,4 +129,12 @@ export const de: Dict = {
     "wallet.estimated_gas_fee": "Geschätzte Gasgebühr",
     "wallet.calculating": "Wird berechnet…",
     "wallet.gas_multiplier": "Multiplikator",
+
+    // -- TxNotification --
+    "txnotify.title.success": "Blockchain-Transaktion bestätigt",
+    "txnotify.title.failure": "Blockchain-Transaktion fehlgeschlagen",
+    "txnotify.title.pending": "Blockchain-Transaktion übermittelt",
+    "txnotify.subtext.pending": "Warte auf On-Chain-Bestätigung",
+    "txnotify.subtext.failure": "Bitte überprüfen Sie den Transaktionsstatus später",
+    "txnotify.view": "Ansehen",
 };

@@ -35,6 +35,8 @@ export const zh: Dict = {
 
     // -- Password (shared by sign / tx modals) --
     "password.error_min_length": "密码至少 8 位",
+    "password.error_missing_letter": "需包含字母",
+    "password.error_missing_digit": "需包含数字",
     "password.error_missing_backend": "缺少后端配置",
     "password.error_confirm_required": "请确认密码",
     "password.error_mismatch": "两次密码不一致",
@@ -125,4 +127,12 @@ export const zh: Dict = {
     "wallet.estimated_gas_fee": "预估 Gas 费",
     "wallet.calculating": "计算中…",
     "wallet.gas_multiplier": "倍率",
+
+    // -- TxNotification --
+    "txnotify.title.success": "区块链交易已确认",
+    "txnotify.title.failure": "区块链交易失败",
+    "txnotify.title.pending": "区块链交易已提交",
+    "txnotify.subtext.pending": "等待链上确认",
+    "txnotify.subtext.failure": "请稍后检查交易状态",
+    "txnotify.view": "查看",
 };

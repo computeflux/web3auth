@@ -35,6 +35,8 @@ export const ru: Dict = {
 
     // -- Password (shared by sign / tx modals) --
     "password.error_min_length": "Пароль должен быть не менее 8 символов",
+    "password.error_missing_letter": "Пароль должен содержать букву",
+    "password.error_missing_digit": "Пароль должен содержать цифру",
     "password.error_missing_backend": "Отсутствует конфигурация бэкенда",
     "password.error_confirm_required": "Подтвердите пароль",
     "password.error_mismatch": "Пароли не совпадают",
@@ -126,4 +128,12 @@ export const ru: Dict = {
     "wallet.estimated_gas_fee": "Оценочная комиссия газа",
     "wallet.calculating": "Вычисление…",
     "wallet.gas_multiplier": "Множитель",
+
+    // -- TxNotification --
+    "txnotify.title.success": "Блокчейн-транзакция подтверждена",
+    "txnotify.title.failure": "Блокчейн-транзакция не удалась",
+    "txnotify.title.pending": "Блокчейн-транзакция отправлена",
+    "txnotify.subtext.pending": "Ожидание подтверждения в сети",
+    "txnotify.subtext.failure": "Пожалуйста, проверьте статус транзакции позже",
+    "txnotify.view": "Смотреть",
 };

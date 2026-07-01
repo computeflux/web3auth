@@ -38,7 +38,7 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-function detectLocale(): Locale {
+export function detectLocale(): Locale {
     try {
         const saved = localStorage.getItem("web3auth_locale");
         if (isLocale(saved)) return saved;

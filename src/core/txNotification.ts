@@ -1,24 +1,31 @@
-/** 交易成功通知：底部弹出，可点击查看 */
+import { detectLocale, tStatic } from "./i18n";
+import type { Locale } from "./i18n";
+
+/** Transaction notification: slides up from the bottom; clickable when an explorer URL is provided. */
 export function showTxNotification(
     hash: string,
     url?: string,
     status: "success" | "failure" | "pending" = "success",
     theme: "light" | "dark" = "dark",
     primaryColor?: string,
+    locale?: Locale,
 ) {
+    const currentLocale = locale ?? detectLocale();
+    const t = (key: string) => tStatic(key, currentLocale);
+
     const shortHash = `${hash.slice(0, 8)}…${hash.slice(-6)}`;
     const displayHash = status === "success" ? hash : shortHash;
     const title =
         status === "success"
-            ? "区块链交易已确认"
+            ? t("txnotify.title.success")
             : status === "failure"
-              ? "区块链交易失败"
-              : "区块链交易已提交";
+              ? t("txnotify.title.failure")
+              : t("txnotify.title.pending");
     const subtext =
         status === "pending"
-            ? "等待链上确认"
+            ? t("txnotify.subtext.pending")
             : status === "failure"
-              ? "请稍后检查交易状态"
+              ? t("txnotify.subtext.failure")
               : displayHash;
     const iconGradient =
         status === "success"
@@ -33,7 +40,7 @@ export function showTxNotification(
     const titleColor = isDark ? "#f1f5f9" : "#676767";
     const subtextColor = isDark ? "#94a3b8" : "#9c9d9d";
 
-    // primaryColor 支持 rgb/rgba/hex 格式，默认蓝色
+    // primaryColor supports rgb/rgba/hex values; defaults to green if omitted
     const pc = primaryColor || "rgb(40, 176, 85)";
     const hasUrl = Boolean(url);
 
@@ -46,7 +53,7 @@ export function showTxNotification(
                 transition:background 0.2s;
                 font-family:inherit;
             " onmouseover="this.style.background='${pc.replace(")", ", 0.28)")}'" onmouseout="this.style.background='${pc.replace(")", ", 0.15)")}'">
-                查看
+                ${t("txnotify.view")}
             </button>`
         : "";
 

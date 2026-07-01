@@ -268,9 +268,9 @@ export function isSubtleAvailable(): boolean {
 
 /** Validate password complexity (≥8 chars, includes letter + digit) */
 export function validatePassword(pwd: string): { ok: boolean; msg?: string } {
-    if (pwd.length < 8) return { ok: false, msg: "密码至少 8 位" };
-    if (!/[a-zA-Z]/.test(pwd)) return { ok: false, msg: "需包含字母" };
-    if (!/[0-9]/.test(pwd)) return { ok: false, msg: "需包含数字" };
+    if (pwd.length < 8) return { ok: false, msg: "password.error_min_length" };
+    if (!/[a-zA-Z]/.test(pwd)) return { ok: false, msg: "password.error_missing_letter" };
+    if (!/[0-9]/.test(pwd)) return { ok: false, msg: "password.error_missing_digit" };
     return { ok: true };
 }
 
