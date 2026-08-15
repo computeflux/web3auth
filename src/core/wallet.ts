@@ -444,8 +444,8 @@ export class RemoteWalletEngine {
                 return hash;
             }
 
-            case "eth_sign":
-            case "personal_sign": {
+            case "eth_sign": {
+                // 遗留 eth_sign：后端签 keccak256(message)（无前缀），与 MetaMask 的 eth_sign 一致
                 const [message, from] = (params ?? []) as [string, string];
 
                 // 消息签名前确认（收集 signToken）
@@ -463,6 +463,36 @@ export class RemoteWalletEngine {
                 return this.backendSign("sign-message", {
                     token: signToken || this.token,
                     message,
+                    from: from ?? this.address,
+                });
+            }
+
+            case "personal_sign": {
+                const [message, from] = (params ?? []) as [string, string];
+
+                // 消息签名前确认（收集 signToken）
+                this.signToken = "";
+                if (this.opts.onBeforeSign) {
+                    const ok = await this.opts.onBeforeSign({
+                        message,
+                        from: from ?? this.address,
+                    });
+                    if (!ok) throw new Error("User rejected");
+                }
+
+                const signToken = this.signToken;
+
+                // 与 MetaMask 等价的 EIP-191 签名：
+                // keccak256("\x19Ethereum Signed Message:\n" + <字节长度> + message)
+                // 但 call_tee_contract: 开头的合约调用消息保持原始签名（链上验证器按原始摘要校验）
+                const isContractCall = message.startsWith("call_tee_contract:");
+                const signMessage = isContractCall
+                    ? message
+                    : `\x19Ethereum Signed Message:\n${new TextEncoder().encode(message).length}${message}`;
+
+                return this.backendSign("sign-message", {
+                    token: signToken || this.token,
+                    message: signMessage,
                     from: from ?? this.address,
                 });
             }
