@@ -187,27 +187,29 @@ export class RemoteWalletEngine {
                     Record<string, unknown>,
                     string,
                 ];
+                // 提取 call 需要的字段，避免 ...tx 把 nonce/chainId/type 等无关字段传入
+                const { from, to, data, gas, gasPrice, value } = tx as Record<string, unknown>;
+                // block 参数: "latest" | "pending" | "earliest" | 区块号 hex
+                const blockParam = block
+                    ? /^0x[0-9a-fA-F]+$/.test(block)
+                        ? { blockNumber: BigInt(block) }
+                        : { blockTag: block as "latest" | "pending" | "earliest" }
+                    : {};
                 return this.publicClient.call({
-                    to: tx.to as `0x${string}`,
-                    data: tx.data as `0x${string}`,
-                    ...tx,
+                    to: to as `0x${string}`,
+                    data: data as `0x${string}` | undefined,
+                    ...(from ? { account: from as `0x${string}` } : {}),
+                    ...(gas ? { gas: BigInt(gas as string) } : {}),
+                    ...(gasPrice ? { gasPrice: BigInt(gasPrice as string) } : {}),
+                    ...(value ? { value: BigInt(value as string) } : {}),
+                    ...blockParam,
                 } as any);
             }
 
             // ---- Write operations (backend signing + broadcast) ----
             case "eth_sendTransaction": {
                 const tx = (params?.[0] ?? {}) as Record<string, unknown>;
-
-                // 交易确认回调（收集 signToken）
-                this.signToken = "";
-                if (this.opts.onBeforeSend) {
-                    const ok = await this.opts.onBeforeSend(tx);
-                    if (!ok) throw new Error("User rejected");
-                }
-
                 const hasData = tx.data && (tx.data as string) !== "0x";
-                const signToken =
-                    this.signToken || (tx as any)._signToken || "";
 
                 const normalizeHex = (value: unknown): string => {
                     if (typeof value === "bigint")
@@ -245,37 +247,7 @@ export class RemoteWalletEngine {
                 let gasPrice =
                     normalizeHex(tx.gasPrice) || normalizeHex(tx.maxFeePerGas);
 
-                // --- nonce 管理：支持连续交易 ---
-                if (!nonce) {
-                    if (this.pendingNonce !== null) {
-                        // 使用本地追踪的 pending nonce（上笔交易尚未确认）
-                        nonce = `0x${this.pendingNonce.toString(16)}`;
-                    } else {
-                        try {
-                            // 优先尝试获取 pending 状态的 nonce（含 mempool）
-                            const pendingCount =
-                                await this.publicClient.getTransactionCount({
-                                    address: this.address,
-                                    blockTag: "pending",
-                                });
-                            nonce = `0x${pendingCount.toString(16)}`;
-                        } catch {
-                            // 回退到 latest
-                            try {
-                                const latestCount =
-                                    await this.publicClient.getTransactionCount(
-                                        {
-                                            address: this.address,
-                                        },
-                                    );
-                                nonce = `0x${latestCount.toString(16)}`;
-                            } catch {
-                                nonce = "0x0";
-                            }
-                        }
-                    }
-                }
-
+                // --- gas/gasPrice 估算：提前到确认弹窗之前，保证弹窗显示的费用与实际发送一致 ---
                 if (!gas || !gasPrice) {
                     try {
                         // 规范化 value（可能是字符串/number/bigint）
@@ -306,11 +278,18 @@ export class RemoteWalletEngine {
                                 : 21000n,
                         ]);
                         if (!gasPrice) gasPrice = `0x${gp.toString(16)}`;
-                        // 空账户状态写入会让实际 gas 远超估算，用 2 倍缓冲 + 固定兜底
+                        // 本链(Paseo AssetHub)实测：approve 估算 ~4k/实际 ~5.6k，recharge 实际 ~5.6k，
+                        // 估算×2 缓冲已足够。下限仅取标准 intrinsic 21,000，避免小交易 gasLimit 虚高
+                        // （实际扣费 = gasUsed × gasPrice，与上限无关，但上限会抬高所需余额和浏览器显示）。
                         if (!gas) {
-                            const buffered = eg * 2n;
-                            const MIN_GAS = hasData ? 2_000_000n : 21000n;
-                            gas = `0x${(buffered > MIN_GAS ? buffered : MIN_GAS).toString(16)}`;
+                            if (!hasData) {
+                                // 普通转账无需缓冲，直接用 intrinsic
+                                gas = "0x5208";
+                            } else {
+                                const buffered = eg * 2n;
+                                const MIN_GAS = 21_000n;
+                                gas = `0x${(buffered > MIN_GAS ? buffered : MIN_GAS).toString(16)}`;
+                            }
                         }
                         console.log("[wallet] estimateGas success:", {
                             estimated: eg.toString(),
@@ -320,9 +299,53 @@ export class RemoteWalletEngine {
                         });
                     } catch (e) {
                         console.warn("[wallet] estimateGas failed:", e);
-                        // 默认 gas：合约调用 2,000,000 / 普通转账 21,000
-                        if (!gas) gas = hasData ? "0x1e8480" : "0x5208";
+                        // 默认 gas：合约调用 400,000 / 普通转账 21,000
+                        if (!gas) gas = hasData ? "0x61a80" : "0x5208";
                         console.log("[wallet] fallback gas:", gas);
+                    }
+                }
+
+                // 写回 tx，确认弹窗（onBeforeSend）读到的 gas/gasPrice 与实际发送一致
+                if (gas) tx.gas = gas;
+                if (gasPrice) tx.gasPrice = gasPrice;
+
+                // 交易确认回调（收集 signToken）
+                this.signToken = "";
+                if (this.opts.onBeforeSend) {
+                    const ok = await this.opts.onBeforeSend(tx);
+                    if (!ok) throw new Error("User rejected");
+                }
+                const signToken =
+                    this.signToken || (tx as any)._signToken || "";
+
+                // --- nonce 管理：支持连续交易 ---
+                if (!nonce) {
+                    if (this.pendingNonce !== null) {
+                        // 使用本地追踪的 pending nonce（上笔交易尚未确认）
+                        nonce = `0x${this.pendingNonce.toString(16)}`;
+                    } else {
+                        try {
+                            // 优先尝试获取 pending 状态的 nonce（含 mempool）
+                            const pendingCount =
+                                await this.publicClient.getTransactionCount({
+                                    address: this.address,
+                                    blockTag: "pending",
+                                });
+                            nonce = `0x${pendingCount.toString(16)}`;
+                        } catch {
+                            // 回退到 latest
+                            try {
+                                const latestCount =
+                                    await this.publicClient.getTransactionCount(
+                                        {
+                                            address: this.address,
+                                        },
+                                    );
+                                nonce = `0x${latestCount.toString(16)}`;
+                            } catch {
+                                nonce = "0x0";
+                            }
+                        }
                     }
                 }
 

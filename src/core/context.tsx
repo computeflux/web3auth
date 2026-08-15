@@ -113,6 +113,28 @@ function getInjectedCandidates(): InjectedProviderLike[] {
     return candidates;
 }
 
+/**
+ * 判断 EIP-1193 错误是否为用户主动拒绝（4001 / 5001）或取消授权。
+ * 仅拦截用户拒绝；钱包不支持该方法（如 -32601）等错误不在此列，仍可继续走 eth_requestAccounts。
+ */
+function isUserRejection(e: unknown): boolean {
+    const err = e as { code?: number | string; message?: string } | undefined;
+    if (!err) return false;
+    const code = String(err.code ?? "");
+    if (code === "4001" || code === "5001") return true;
+    const msg = (err.message ?? "").toLowerCase();
+    return (
+        msg.includes("user rejected") ||
+        msg.includes("user denied") ||
+        msg.includes("user cancelled") ||
+        msg.includes("user canceled") ||
+        msg.includes("denied by user") ||
+        msg.includes("rejected by user") ||
+        msg.includes("request rejected") ||
+        msg.includes("permission denied")
+    );
+}
+
 function detectInjectedWallets(): Partial<Record<WalletKey, boolean>> {
     const candidates = getInjectedCandidates();
     const anyInjected = candidates.length > 0;
@@ -611,7 +633,12 @@ export function Web3AuthProvider({
                         });
                     }
                     if (walletRef.current) {
-                        const gp = (tx.gasPrice as bigint)
+                        // wallet.ts 在调用 onBeforeSend 前已把估算好的 gas/gasPrice 写回 tx，
+                        // 这里读取的即实际发送值（缺失时兜底请求 eth_gasPrice + intrinsic）
+                        const gas = tx.gas
+                            ? BigInt(tx.gas as string)
+                            : 21000n;
+                        const gp = tx.gasPrice
                             ? BigInt(tx.gasPrice as string)
                             : BigInt(
                                   (await walletRef.current.provider.request({
@@ -619,8 +646,6 @@ export function Web3AuthProvider({
                                       params: [],
                                   })) as string,
                               );
-                        const gas =
-                            (tx.gas as bigint) || (tx.data ? 100000n : 21000n);
                         const feeWei = gp * gas;
                         const fee = Number(feeWei) / 1e18;
                         setEstimatedFee(`${fee.toFixed(6)} ${ticker}`);
@@ -904,8 +929,10 @@ export function Web3AuthProvider({
                         method: "wallet_requestPermissions",
                         params: [{ eth_accounts: {} }],
                     });
-                } catch {
-                    // 钱包可能不支持 wallet_requestPermissions，忽略错误继续
+                } catch (permErr) {
+                    // 用户主动拒绝授权：直接失败，避免再弹出第二个 eth_requestAccounts 弹框
+                    if (isUserRejection(permErr)) throw permErr;
+                    // 钱包可能不支持 wallet_requestPermissions（如 -32601），忽略错误继续
                 }
 
                 const accounts = (await picked.request({
