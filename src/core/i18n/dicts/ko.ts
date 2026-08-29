@@ -1,6 +1,8 @@
 import type { Dict } from "../types";
 
 export const ko: Dict = {
+    // -- Common --
+    "common.tee_protected": "TEE로 보호됨",
     // -- LoginModal --
     "login.title": "로그인",
     "login.subtitle": "계속하려면 로그인하세요",

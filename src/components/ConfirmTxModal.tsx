@@ -335,15 +335,48 @@ export default function ConfirmTxModal({
                     outline: "none",
                 }}
             >
-                <div
-                    style={{
-                        fontSize: 18,
-                        fontWeight: 700,
-                        marginBottom: 6,
-                        textAlign: "center",
-                    }}
-                >
-                    {isNew ? t("tx.title_set") : t("tx.title_enter")}
+                <div style={{ textAlign: "center", marginBottom: 18 }}>
+                    <div
+                        style={{
+                            fontSize: 18,
+                            fontWeight: 700,
+                            color: colors.text,
+                            lineHeight: 1.3,
+                        }}
+                    >
+                        {isNew ? t("tx.title_set") : t("tx.title_enter")}
+                    </div>
+                    <div style={{ marginTop: 6, display: "flex", justifyContent: "center" }}>
+                        <span
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 3.5,
+                                fontSize: 10,
+                                fontWeight: 600,
+                                padding: "1.5px 7px",
+                                borderRadius: 9999,
+                                background: "rgba(16, 185, 129, 0.12)",
+                                color: "#10b981",
+                                border: "1px solid rgba(16, 185, 129, 0.3)",
+                            }}
+                        >
+                            <svg
+                                width="10"
+                                height="10"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                <path d="m9 12 2 2 4-4" />
+                            </svg>
+                            {t("common.tee_protected")}
+                        </span>
+                    </div>
                 </div>
 
                 {tx && (

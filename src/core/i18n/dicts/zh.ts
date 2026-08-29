@@ -1,6 +1,8 @@
 import type { Dict } from "../types";
 
 export const zh: Dict = {
+    // -- Common --
+    "common.tee_protected": "被 TEE 保护",
     // -- LoginModal --
     "login.title": "登录",
     "login.subtitle": "登录以继续",

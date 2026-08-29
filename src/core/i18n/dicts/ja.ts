@@ -1,6 +1,8 @@
 import type { Dict } from "../types";
 
 export const ja: Dict = {
+    // -- Common --
+    "common.tee_protected": "TEEで保護されています",
     // -- LoginModal --
     "login.title": "ログイン",
     "login.subtitle": "続けるにはログインしてください",

@@ -263,7 +263,7 @@ function LoginChannelIcon(props: { label: string; theme?: "light" | "dark" }) {
                     textAnchor="middle"
                     fontSize="12"
                     fontWeight="800"
-                    fill="#ffffff"
+
                 >
                     C
                 </text>
@@ -749,13 +749,50 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                         <div style={{ minWidth: 0, flex: "1 1 auto" }}>
                             <div
                                 style={{
-                                    fontSize: 11,
-                                    color: theme.subtext,
-                                    fontWeight: 600,
-                                    letterSpacing: 0.02,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 6,
                                 }}
                             >
-                                {t("wallet.current_network")}
+                                <span
+                                    style={{
+                                        fontSize: 11,
+                                        color: theme.subtext,
+                                        fontWeight: 600,
+                                        letterSpacing: 0.02,
+                                    }}
+                                >
+                                    {t("wallet.current_network")}
+                                </span>
+                                <span
+                                    style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 3,
+                                        fontSize: 9.5,
+                                        fontWeight: 600,
+                                        padding: "1px 5px",
+                                        borderRadius: 9999,
+                                        background: "rgba(16, 185, 129, 0.12)",
+                                        color: "#10b981",
+                                        border: "1px solid rgba(16, 185, 129, 0.3)",
+                                    }}
+                                >
+                                    <svg
+                                        width="9"
+                                        height="9"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    >
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                        <path d="m9 12 2 2 4-4" />
+                                    </svg>
+                                    {t("common.tee_protected")}
+                                </span>
                             </div>
                             <div
                                 style={{

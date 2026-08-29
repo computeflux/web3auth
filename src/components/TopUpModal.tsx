@@ -271,7 +271,7 @@ function QRCodeSVG({ data, size = 160 }: { data: string; size?: number }) {
 
     return (
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-            <rect width={size} height={size} fill="#ffffff" rx="8" />
+            <rect width={size} height={size}  rx="8" />
             {rects.map((r, i) => (
                 <rect
                     key={i}

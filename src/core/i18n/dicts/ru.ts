@@ -1,6 +1,8 @@
 import type { Dict } from "../types";
 
 export const ru: Dict = {
+    // -- Common --
+    "common.tee_protected": "Защищено TEE",
     // -- LoginModal --
     "login.title": "Войти",
     "login.subtitle": "Войдите, чтобы продолжить",

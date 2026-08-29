@@ -675,29 +675,62 @@ export function LoginModal({
                 </button>
 
                 {/* Header */}
-                <div style={{ textAlign: "center", marginBottom: 28 }}>
+                <div style={{ textAlign: "center", marginBottom: 24 }}>
                     <div
                         style={{
                             fontSize: 20,
                             fontWeight: 600,
                             color: theme.text,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 8,
                         }}
                     >
-                        {t("login.title")}
+                        <span>{t("login.title")}</span>
+                        <span
+                            style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 3.5,
+                                fontSize: 10,
+                                fontWeight: 600,
+                                padding: "1.5px 7px",
+                                borderRadius: 9999,
+                                background: "rgba(16, 185, 129, 0.12)",
+                                color: "#10b981",
+                                border: "1px solid rgba(16, 185, 129, 0.3)",
+                            }}
+                        >
+                            <svg
+                                width="10"
+                                height="10"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                <path d="m9 12 2 2 4-4" />
+                            </svg>
+                            {t("common.tee_protected")}
+                        </span>
                     </div>
-                    <div
-                        style={{
-                            fontSize: 13,
-                            color: theme.subtext,
-                            marginTop: 4,
-                        }}
-                    >
-                        {step === "main"
-                            ? t("login.subtitle")
-                            : step === "email"
-                              ? t("login.email_subtitle")
-                              : t("login.otp_subtitle_email", { email })}
-                    </div>
+                    {step !== "main" && (
+                        <div
+                            style={{
+                                fontSize: 13,
+                                color: theme.subtext,
+                                marginTop: 4,
+                            }}
+                        >
+                            {step === "email"
+                                ? t("login.email_subtitle")
+                                : t("login.otp_subtitle_email", { email })}
+                        </div>
+                    )}
                 </div>
 
                 {/* Error */}
