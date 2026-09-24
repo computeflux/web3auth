@@ -608,7 +608,7 @@ export function LoginModal({
         border: "none",
         background: theme.btnSecondaryBg,
         color: theme.subtext,
-        fontSize: 13,
+        fontSize: 14,
         cursor: "pointer",
         marginTop: 8,
     };
@@ -721,7 +721,7 @@ export function LoginModal({
                     {step !== "main" && (
                         <div
                             style={{
-                                fontSize: 13,
+                                fontSize: 14,
                                 color: theme.subtext,
                                 marginTop: 4,
                             }}
@@ -742,7 +742,7 @@ export function LoginModal({
                             borderRadius: 8,
                             padding: "10px 14px",
                             marginBottom: 16,
-                            fontSize: 13,
+                            fontSize: 14,
                             color: theme.errorText,
                             lineHeight: 1.4,
                         }}
@@ -1030,7 +1030,7 @@ export function LoginModal({
                         <label
                             style={{
                                 display: "block",
-                                fontSize: 13,
+                                fontSize: 14,
                                 fontWeight: 500,
                                 color: theme.subtext,
                                 marginBottom: 6,
@@ -1076,7 +1076,7 @@ export function LoginModal({
                         <label
                             style={{
                                 display: "block",
-                                fontSize: 13,
+                                fontSize: 14,
                                 fontWeight: 500,
                                 color: theme.subtext,
                                 marginBottom: 6,
@@ -1118,7 +1118,7 @@ export function LoginModal({
                             <div
                                 style={{
                                     ...ghostBtn,
-                                    fontSize: 13,
+                                    fontSize: 14,
                                     cursor: "default",
                                     opacity: 0.6,
                                     textAlign: "center",

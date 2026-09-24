@@ -681,7 +681,7 @@ export default function ConfirmTxModal({
                         border: "none",
                         background: colors.btnGhost,
                         color: colors.subtext,
-                        fontSize: 13,
+                        fontSize: 14,
                         cursor: "pointer",
                         marginTop: 8,
                     }}

@@ -457,7 +457,7 @@ export default function TopUpModal({
         border: "none",
         background: "transparent",
         color: colors.subtext,
-        fontSize: 13,
+        fontSize: 14,
         cursor: "pointer",
         marginTop: 8,
     };
@@ -471,7 +471,7 @@ export default function TopUpModal({
         borderRadius: 10,
         border: `1px solid ${colors.optionBorder}`,
         background: colors.optionBg,
-        fontSize: 13,
+        fontSize: 14,
         fontFamily: "monospace",
         wordBreak: "break-all",
         color: colors.text,
@@ -523,7 +523,7 @@ export default function TopUpModal({
                         </div>
                         <div
                             style={{
-                                fontSize: 13,
+                                fontSize: 14,
                                 color: colors.subtext,
                                 marginTop: 4,
                             }}
@@ -679,7 +679,7 @@ export default function TopUpModal({
                         </div>
                         <div
                             style={{
-                                fontSize: 13,
+                                fontSize: 14,
                                 color: colors.subtext,
                                 marginTop: 4,
                             }}
@@ -852,7 +852,7 @@ export default function TopUpModal({
                         {t("topup.title")}
                     </div>
                     <div
-                        style={{ fontSize: 13, color: colors.subtext, marginTop: 4 }}
+                        style={{ fontSize: 14, color: colors.subtext, marginTop: 4 }}
                     >
                         {t("topup.subtitle")}
                     </div>

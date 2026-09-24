@@ -1050,7 +1050,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                         border: `1px solid ${theme.softBorder}`,
                                         background: theme.cardBg,
                                         color: theme.text,
-                                        fontSize: 13,
+                                        fontSize: 14,
                                         fontWeight: 600,
                                         outline: "none",
                                     }}
@@ -1083,7 +1083,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                                 border: `1px solid ${theme.softBorder}`,
                                                 background: theme.cardBg,
                                                 color: theme.text,
-                                                fontSize: 13,
+                                                fontSize: 14,
                                                 fontWeight: 600,
                                                 outline: "none",
                                             }}
@@ -1162,7 +1162,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                         />
                                         <span
                                             style={{
-                                                fontSize: 13,
+                                                fontSize: 14,
                                                 fontWeight: 700,
                                                 color: theme.text,
                                                 minWidth: 36,
@@ -1309,7 +1309,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                         ? theme.btnDisabled
                                         : theme.btn,
                                 color: theme.btnText,
-                                fontSize: 13,
+                                fontSize: 14,
                                 fontWeight: 800,
                                 cursor:
                                     !canSendNative || sendOpen || sendBusy
@@ -1347,7 +1347,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                                         ? theme.btnDisabled
                                         : theme.btn,
                                 color: theme.btnText,
-                                fontSize: 13,
+                                fontSize: 14,
                                 fontWeight: 800,
                                 cursor:
                                     !addr || !props.onAddFunds
@@ -1379,7 +1379,7 @@ export default function WalletUIModal(props: WalletUIModalProps) {
                             alignItems: "center",
                             justifyContent: "space-between",
                             color: theme.subtext,
-                            fontSize: 13,
+                            fontSize: 14,
                             fontWeight: 800,
                             marginBottom: 12,
                         }}
