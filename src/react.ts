@@ -17,6 +17,8 @@ export {
 } from "./core/context";
 
 export { Web3AuthI18nProvider, useTranslation, setLocale } from "./core/i18n";
+
+export { SsoGate } from "./core/sso-gate";
 export type { Locale } from "./core/i18n";
 
 export type {

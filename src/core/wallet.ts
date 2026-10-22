@@ -49,7 +49,7 @@ export interface RemoteWalletOptions {
 // EIP-1193 Provider (thin proxy)
 // ---------------------------------------------------------------------------
 
-type EIP1193Provider = {
+export type EIP1193Provider = {
     request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
     on: (event: string, listener: (...args: unknown[]) => void) => void;
     removeListener: (
