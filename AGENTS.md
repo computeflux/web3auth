@@ -34,6 +34,19 @@ npm install
 npx tsc --noEmit       # 类型检查（无独立 build 脚本；使用方各自编译）
 ```
 
+## 脚本
+
+`package.json` **没有 `scripts` 字段**，所以不存在 `npm run build` / `npm run lint` / `npm test` 之类命令：
+
+| 命令 | 用途 |
+|------|------|
+| （无） | `package.json` 未定义任何 npm scripts |
+
+要点：
+- 本包是**源码直出**的私有 SDK（`private: true`）：`main` / `types` / `exports`（`.`, `./react`, `./remote`）全部指向 `src/*.ts`，由使用方（dapp / c2c / minishop / core-ui）各自编译，所以仓库里不需要构建步骤。
+- 类型检查只能用上方的 `npx tsc --noEmit`（`tsconfig.json` 在项目根）；但 `typescript` **不是**本包 devDependency，`npx` 会临时下载或命中外部缓存，离线环境需自行提供 tsc。
+- 没有测试/发布脚本；改完 SDK 去引用方验证（如 core-ui `npm run build`、minishop `npm run build`），`file:` 依赖的使用方需重新 `npm install`。
+
 ## 约定
 - 遵循仓库根级约定（见上级 `AGENTS.md`）。
 - 对外 API 镜像 `@web3auth/modal`，**保持 import 路径与签名兼容**，避免使用方（dapp/c2c/minishop）迁移成本。
